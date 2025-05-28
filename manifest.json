@@ -4,6 +4,7 @@
   "description": "Your personal reading companion with virtual pet",
   "start_url": "/Bookish/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "background_color": "#F7F5F3",
   "theme_color": "#D2691E",
   "orientation": "portrait-primary",
