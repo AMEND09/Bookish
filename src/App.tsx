@@ -17,8 +17,8 @@ import PetPage from './pages/PetPage';
 const App: React.FC = () => {
   return (
     <>
-      {/* Custom titlebar for PWA window controls overlay */}
-      <div className="app-titlebar">
+      {/* Custom titlebar for PWA window controls overlay - desktop only */}
+      <div className="app-titlebar hidden">
         <div className="app-titlebar-content">
           <div className="app-titlebar-icon">📚</div>
           <span>Bookish</span>

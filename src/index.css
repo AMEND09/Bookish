@@ -2,44 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
+/* iOS PWA Status Bar Fix */
+@supports (-webkit-touch-callout: none) {
+  /* iOS specific styles */
+  html, body {
+    height: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Fix for iOS PWA status bar */
+  #root {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Ensure proper height calculation */
+  .min-h-screen {
+    min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+}
+
+/* Remove orange status bar styling */
+@media (display-mode: standalone) {
+  /* Hide any potential system UI overlays */
+  body {
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-text-size-adjust: none;
+  }
+
+  /* Ensure consistent background */
+  html, body, #root {
+    background-color: #F7F5F3 !important;
+  }
+}
+
 /* PWA Window Controls Overlay Support */
 :root {
   --titlebar-area-x: 0;
   --titlebar-area-y: 0;
   --titlebar-area-width: 100%;
-  --titlebar-area-height: 33px;
+  --titlebar-area-height: 0px;
 }
 
-/* When window controls overlay is active */
 @supports (top: env(titlebar-area-height)) {
   @media (display-mode: window-controls-overlay) {
     :root {
-      --titlebar-area-x: env(titlebar-area-x, 0);
-      --titlebar-area-y: env(titlebar-area-y, 0);
-      --titlebar-area-width: env(titlebar-area-width, 100%);
-      --titlebar-area-height: env(titlebar-area-height, 33px);
+      --titlebar-area-height: env(titlebar-area-height, 0px);
     }
 
-    /* Make the app area extend into the titlebar */
-    #root {
+    /* Only apply titlebar styles on desktop */
+    .app-titlebar {
+      display: flex;
       position: fixed;
       top: 0;
       left: 0;
-      width: 100vw;
-      height: 100vh;
-      padding-top: var(--titlebar-area-height);
-    }
-
-    /* Custom titlebar styling */
-    .app-titlebar {
-      position: fixed;
-      top: var(--titlebar-area-y);
-      left: var(--titlebar-area-x);
-      width: var(--titlebar-area-width);
+      width: 100%;
       height: var(--titlebar-area-height);
-      background-color: #D2691E;
-      color: white;
-      display: flex;
+      background-color: #F7F5F3;
+      color: #3A3A3A;
       align-items: center;
       padding: 0 16px;
       z-index: 9999;
@@ -56,36 +79,25 @@
       font-weight: 600;
     }
 
-    .app-titlebar-icon {
-      width: 20px;
-      height: 20px;
-      background: white;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      color: #D2691E;
-    }
-
-    /* Adjust header padding when titlebar is present */
     .page-header {
       padding-top: calc(1rem + var(--titlebar-area-height));
     }
+  }
+}
 
-    /* Modal positioning adjustment */
-    .modal-overlay {
-      padding-top: var(--titlebar-area-height);
-    }
+/* Hide titlebar on mobile devices */
+@media (max-width: 768px) {
+  .app-titlebar {
+    display: none !important;
+  }
+  
+  .page-header {
+    padding-top: 1rem !important;
   }
 }
 
 /* Fallback for browsers that don't support window controls overlay */
 @media (display-mode: standalone) {
-  #root {
-    padding-top: 0;
-  }
-  
   .app-titlebar {
     display: none;
   }
