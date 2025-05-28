@@ -1,6 +1,5 @@
 import React from 'react';
 import { useBooks } from '../../context/BookContext';
-import { getBookCoverUrl } from '../../services/api';
 import { BookOpen } from 'lucide-react';
 
 interface CurrentlyReadingProps {
@@ -30,9 +29,9 @@ const CurrentlyReading: React.FC<CurrentlyReadingProps> = ({ onContinueReading }
   )[0];
   
   const currentPage = latestSession?.endPage || latestSession?.startPage || 1;
-  const totalPages = currentBook.number_of_pages_median || 100;
-  const progressPercent = Math.min(Math.round((currentPage / totalPages) * 100), 100);
-  
+  const totalPages = currentBook.number_of_pages_median || 0;
+  const progressPercent = totalPages > 0 ? Math.min(Math.round((currentPage / totalPages) * 100), 100) : 0;
+
   return (
     <div className="p-4 bg-[#F0EDE8] rounded-xl shadow-sm">
       <h2 className="font-serif text-lg font-medium text-[#3A3A3A] mb-3">Currently Reading</h2>
@@ -41,7 +40,7 @@ const CurrentlyReading: React.FC<CurrentlyReadingProps> = ({ onContinueReading }
         <div className="w-24 h-36 rounded-md overflow-hidden shadow-md flex-shrink-0">
           {currentBook.cover_i ? (
             <img 
-              src={getBookCoverUrl(currentBook.cover_i)} 
+              src={`https://covers.openlibrary.org/b/id/${currentBook.cover_i}-M.jpg`} 
               alt={currentBook.title}
               className="w-full h-full object-cover"
             />
@@ -59,19 +58,29 @@ const CurrentlyReading: React.FC<CurrentlyReadingProps> = ({ onContinueReading }
             <p className="text-sm text-[#8B7355] mb-2">by {currentBook.author_name[0]}</p>
           )}
           
-          <div className="flex items-center gap-2 text-xs text-[#8B7355] mb-2">
-            <span>{progressPercent}%</span>
-            <div className="flex-1 h-1.5 bg-[#F7F5F3] rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-[#E59554] rounded-full transition-all duration-300 ease-out"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          </div>
+          {totalPages > 0 && (
+            <>
+              <div className="flex items-center gap-2 text-xs text-[#8B7355] mb-2">
+                <span>{progressPercent}%</span>
+                <div className="flex-1 h-1.5 bg-[#F7F5F3] rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-[#E59554] rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              </div>
+              
+              <div className="text-xs text-[#8B7355] mb-4">
+                Page {currentPage} of {totalPages}
+              </div>
+            </>
+          )}
           
-          <div className="text-xs text-[#8B7355] mb-4">
-            Page {currentPage} of {totalPages}
-          </div>
+          {totalPages === 0 && (
+            <div className="text-xs text-[#8B7355] mb-4">
+              Page count unavailable
+            </div>
+          )}
           
           <button
             onClick={onContinueReading}

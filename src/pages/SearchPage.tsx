@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, BookOpen } from 'lucide-react';
-import { searchBooks, getBookCoverUrl } from '../services/api';
+import { searchBooks } from '../services/api';
 import { Book } from '../types';
 
 const SearchPage: React.FC = () => {
@@ -32,6 +32,46 @@ const SearchPage: React.FC = () => {
     // Pass the book data as state so it's available on the details page
     navigate(`/book?book=${book.key}`, { state: { bookData: book } });
   };
+  
+  const renderBookCard = (book: Book) => (
+    <button
+      key={book.key}
+      onClick={() => handleSelectBook(book)}
+      className="w-full flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow text-left"
+    >
+      <div className="w-12 h-16 bg-[#F0EDE8] rounded flex-shrink-0 overflow-hidden">
+        {book.cover_i ? (
+          <img
+            src={`https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`}
+            alt={book.title}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              target.nextElementSibling?.classList.remove('hidden');
+            }}
+          />
+        ) : null}
+        <div className={`w-full h-full flex items-center justify-center ${book.cover_i ? 'hidden' : ''}`}>
+          <BookOpen className="w-6 h-6 text-[#8B7355]" />
+        </div>
+      </div>
+      
+      <div className="flex-1 min-w-0">
+        <h3 className="font-serif font-medium text-[#3A3A3A] text-sm leading-tight mb-1 truncate">
+          {book.title}
+        </h3>
+        {book.author_name && (
+          <p className="text-xs text-[#8B7355] mb-2 truncate">
+            by {book.author_name[0]}
+          </p>
+        )}
+        {book.first_publish_year && (
+          <p className="text-xs text-[#8B7355]">{book.first_publish_year}</p>
+        )}
+      </div>
+    </button>
+  );
   
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#F7F5F3] pb-6">
@@ -70,39 +110,7 @@ const SearchPage: React.FC = () => {
             <h2 className="font-serif text-lg font-medium text-[#3A3A3A]">Search Results</h2>
             
             <div className="space-y-3">
-              {results.map((book) => (
-                <button
-                  key={book.key}
-                  onClick={() => handleSelectBook(book)}
-                  className="w-full flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow text-left"
-                >
-                  <div className="w-16 h-24 rounded overflow-hidden bg-[#F0EDE8] flex-shrink-0">
-                    {book.cover_i ? (
-                      <img
-                        src={getBookCoverUrl(book.cover_i, 'S')}
-                        alt={book.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-[#8B7355]">
-                        <BookOpen className="w-6 h-6 text-white" />
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-serif text-base font-medium text-[#3A3A3A] line-clamp-2">{book.title}</h3>
-                    
-                    {book.author_name && book.author_name.length > 0 && (
-                      <p className="text-sm text-[#8B7355] mb-1">{book.author_name[0]}</p>
-                    )}
-                    
-                    {book.first_publish_year && (
-                      <p className="text-xs text-[#8B7355]">{book.first_publish_year}</p>
-                    )}
-                  </div>
-                </button>
-              ))}
+              {results.map((book) => renderBookCard(book))}
             </div>
           </div>
         ) : (

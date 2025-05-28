@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Timer, PenLine, PlayCircle, Plus, ChevronDown, ChevronUp, Check } from 'lucide-react';
-import { getBookDetails, getBookCoverUrl } from '../services/api';
+import { getBookDetails } from '../services/api';
 import { useBooks } from '../context/BookContext';
 import { usePet } from '../context/PetContext';
 
@@ -144,13 +144,13 @@ const BookDetailsPage: React.FC = () => {
   };
 
   // Calculate reading progress
-  const totalPages = currentBook.number_of_pages_median || 100;
+  const totalPages = currentBook.number_of_pages_median || currentBook.number_of_pages || 0;
   const latestSession = [...sessions]
     .filter(s => s.bookId === currentBook.key)
     .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())[0];
   
   const currentPage = latestSession?.endPage || latestSession?.startPage || 1;
-  const progressPercent = Math.min(Math.round((currentPage / totalPages) * 100), 100);
+  const progressPercent = totalPages > 0 ? Math.min(Math.round((currentPage / totalPages) * 100), 100) : 0;
   
   // Calculate total reading time for this book
   const totalMinutes = sessions
@@ -174,54 +174,56 @@ const BookDetailsPage: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#F7F5F3]">
-      <div className="relative">
-        {/* Book cover header */}
-        <div className="relative h-64 bg-[#8B7355] overflow-hidden">
-          {currentBook.cover_i && (
-            <img
-              src={getBookCoverUrl(currentBook.cover_i, 'L')}
-              alt={currentBook.title}
-              className="w-full h-full object-cover opacity-30"
-            />
-          )}
-          
-          <div className="absolute top-0 left-0 right-0 p-4">
-            <button
-              onClick={() => navigate(-1)}
-              className="w-8 h-8 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-[#8B7355]" />
-            </button>
-          </div>
-          
-          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#3A3A3A]/90 to-transparent text-white">
-            <h1 className="font-serif text-2xl font-medium mb-1">{currentBook.title}</h1>
-            
-            {currentBook.author_name && currentBook.author_name.length > 0 && (
-              <p className="text-sm text-white/90">by {currentBook.author_name[0]}</p>
+      {/* Header with back button */}
+      <div className="p-4 bg-[#F7F5F3]">
+        <button
+          onClick={() => navigate(-1)}
+          className="w-8 h-8 flex items-center justify-center bg-[#F0EDE8] rounded-full hover:bg-[#E8E3DD] transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 text-[#8B7355]" />
+        </button>
+      </div>
+
+      {/* Book info section with cover and title side by side */}
+      <div className="p-6">
+        <div className="flex gap-4 mb-6">
+          {/* Book cover */}
+          <div className="w-24 h-32 rounded-lg overflow-hidden shadow-lg flex-shrink-0">
+            {currentBook.cover_i ? (
+              <img
+                src={`https://covers.openlibrary.org/b/id/${currentBook.cover_i}-M.jpg`}
+                alt={currentBook.title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-[#8B7355] flex items-center justify-center">
+                <BookOpen className="w-8 h-8 text-white" />
+              </div>
             )}
           </div>
-        </div>
-        
-        {/* Book cover thumbnail */}
-        <div className="absolute -bottom-20 left-6 w-32 h-48 rounded-md overflow-hidden border-4 border-white shadow-md">
-          {currentBook.cover_i ? (
-            <img
-              src={getBookCoverUrl(currentBook.cover_i, 'M')}
-              alt={currentBook.title}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-[#8B7355] flex items-center justify-center">
-              <BookOpen className="w-10 h-10 text-white" />
+          
+          {/* Book title and author */}
+          <div className="flex-1 min-w-0">
+            <h1 className="font-serif text-xl font-medium text-[#3A3A3A] mb-2 leading-tight">
+              {currentBook.title}
+            </h1>
+            
+            {currentBook.author_name && currentBook.author_name.length > 0 && (
+              <p className="text-sm text-[#8B7355] mb-3">by {currentBook.author_name[0]}</p>
+            )}
+            
+            {/* Book metadata */}
+            <div className="space-y-1">
+              {currentBook.first_publish_year && (
+                <p className="text-xs text-[#8B7355]">First published: {currentBook.first_publish_year}</p>
+              )}
+              {totalPages > 0 && (
+                <p className="text-xs text-[#8B7355]">{totalPages} pages</p>
+              )}
             </div>
-          )}
+          </div>
         </div>
-      </div>
-      
-      {/* Content */}
-      <div className="mt-24 p-6">
-        {isInLibrary && (
+        {isInLibrary && totalPages > 0 && (
           <div className="flex gap-3 mb-6">
             <div className="flex-1">
               <div className="flex justify-between items-center mb-1">

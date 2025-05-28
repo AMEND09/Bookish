@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, PenLine, Library, BarChart3 } from 'lucide-react';
+import { Search, PenLine, Library, BarChart3} from 'lucide-react';
 import Header from '../components/layout/Header';
 import CurrentlyReading from '../components/books/CurrentlyReading';
 import ReadingStats from '../components/reading/ReadingStats';
@@ -82,6 +82,15 @@ const HomePage: React.FC = () => {
               No recent activity. Start reading to track your progress!
             </p>
           )}
+        </section>
+        
+        <section className="text-center py-4">
+          <button
+            onClick={() => navigate('/welcome')}
+            className="text-sm text-[#8B7355] hover:text-[#3A3A3A] transition-colors underline"
+          >
+            Learn more about Bookish features
+          </button>
         </section>
       </main>
     </div>
