@@ -11,12 +11,13 @@ import LibraryPage from './pages/LibraryPage';
 import StatsPage from './pages/StatsPage';
 import NotesPage from './pages/NotesPage';
 import AddNotePage from './pages/AddNotePage';
+import PetPage from './pages/PetPage';
 
 function App() {
   return (
     <PetProvider>
       <BookProvider>
-        <Router>
+        <Router basename="/Bookish">
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/search" element={<SearchPage />} />
@@ -26,6 +27,7 @@ function App() {
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/notes" element={<NotesPage />} />
             <Route path="/notes/add" element={<AddNotePage />} />
+            <Route path="/pet" element={<PetPage />} />
           </Routes>
         </Router>
       </BookProvider>

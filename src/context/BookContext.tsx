@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Book, ReadingSession, ReadingNote } from '../types';
-import { getBooks, saveBook, getCurrentBook, setCurrentBook, getSessionsByBook, saveSession, getNotesByBook, saveNote, removeNote } from '../services/storage';
+import { getBooks, saveBook, getCurrentBook, setCurrentBook, getSessionsByBook, saveSession, getNotesByBook, saveNote, removeNote, removeBook as removeBookFromStorage } from '../services/storage';
 
 interface BookContextProps {
   books: Book[];
@@ -8,6 +8,7 @@ interface BookContextProps {
   sessions: ReadingSession[];
   notes: ReadingNote[];
   addBook: (book: Book) => void;
+  removeBook: (bookKey: string) => void;
   setActiveBook: (book: Book | null) => void;
   addSession: (session: ReadingSession) => void;
   addNote: (note: ReadingNote) => void;
@@ -66,6 +67,19 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
     });
   };
 
+  const removeBook = (bookKey: string) => {
+    // Remove from storage
+    removeBookFromStorage(bookKey);
+    
+    // Update state
+    setBooks(prevBooks => prevBooks.filter(book => book.key !== bookKey));
+    
+    // If this was the current book, clear it
+    if (currentBook && currentBook.key === bookKey) {
+      setActiveBook(null);
+    }
+  };
+
   const setActiveBook = (book: Book | null) => {
     setCurrentBook(book);
     setCurrentBookState(book);
@@ -110,6 +124,7 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
         sessions,
         notes,
         addBook,
+        removeBook,
         setActiveBook,
         addSession,
         addNote,

@@ -11,7 +11,7 @@ import { getBookCoverUrl } from '../services/api';
 const ReadingSessionPage: React.FC = () => {
   const navigate = useNavigate();
   const { currentBook, addSession, addNote } = useBooks();
-  const { feedPetMinutes } = usePet();
+  const { updatePetFromReading } = usePet();
   
   const [startPage, setStartPage] = useState(1);
   const [endPage, setEndPage] = useState(1);
@@ -62,7 +62,7 @@ const ReadingSessionPage: React.FC = () => {
     
     // Feed the pet based on reading time
     if (session.duration) {
-      feedPetMinutes(session.duration);
+      updatePetFromReading(session.duration);
     }
     
     // If there's a note, save it

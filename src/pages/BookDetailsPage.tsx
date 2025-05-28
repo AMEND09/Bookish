@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Timer, PenLine, PlayCircle, Plus } from 'lucide-react';
+import { ArrowLeft, BookOpen, Timer, PenLine, PlayCircle, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { getBookDetails, getBookCoverUrl } from '../services/api';
 import { useBooks } from '../context/BookContext';
 
@@ -13,6 +13,7 @@ const BookDetailsPage: React.FC = () => {
   const [currentBook, setCurrentBook] = useState<any>(null);
   const [isInLibrary, setIsInLibrary] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   
   const bookKey = searchParams.get('book');
 
@@ -219,11 +220,32 @@ const BookDetailsPage: React.FC = () => {
         ) : currentBook.description ? (
           <div className="mb-6">
             <h2 className="font-serif text-lg font-medium text-[#3A3A3A] mb-2">About this book</h2>
-            <p className="text-sm text-[#3A3A3A] leading-relaxed line-clamp-4">
-              {typeof currentBook.description === 'string' 
-                ? currentBook.description 
-                : 'No description available.'}
-            </p>
+            <div className="relative">
+              <p className={`text-sm text-[#3A3A3A] leading-relaxed ${!isDescriptionExpanded ? 'line-clamp-4' : ''}`}>
+                {typeof currentBook.description === 'string' 
+                  ? currentBook.description 
+                  : 'No description available.'}
+              </p>
+              
+              {currentBook.description && currentBook.description.length > 200 && (
+                <button
+                  onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                  className="mt-2 flex items-center gap-1 text-sm font-medium text-[#8B7355] hover:text-[#3A3A3A] transition-colors"
+                >
+                  {isDescriptionExpanded ? (
+                    <>
+                      Show less
+                      <ChevronUp className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <>
+                      Read more
+                      <ChevronDown className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         ) : null}
         

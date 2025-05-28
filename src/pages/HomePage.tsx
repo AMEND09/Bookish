@@ -32,11 +32,6 @@ const HomePage: React.FC = () => {
         <CurrentlyReading onContinueReading={() => navigate('/reading')} />
         
         <section>
-          <h2 className="font-serif text-lg font-medium text-[#3A3A3A] mb-3">Your Progress</h2>
-          <ReadingStats />
-        </section>
-        
-        <section>
           <h2 className="font-serif text-lg font-medium text-[#3A3A3A] mb-3">Quick Actions</h2>
           <div className="grid grid-cols-2 gap-3">
             <ActionButton 
@@ -60,6 +55,11 @@ const HomePage: React.FC = () => {
               onClick={() => navigate('/stats')} 
             />
           </div>
+        </section>
+        
+        <section>
+          <h2 className="font-serif text-lg font-medium text-[#3A3A3A] mb-3">Your Progress</h2>
+          <ReadingStats />
         </section>
         
         <section>
