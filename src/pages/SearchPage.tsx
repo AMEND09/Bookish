@@ -246,7 +246,7 @@ const SearchPage: React.FC = () => {
   
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#F7F5F3] pb-6">
-      <header className="p-4 bg-[#F0EDE8] shadow-sm">
+      <header className="page-header p-4 bg-[#F0EDE8] shadow-sm">
         <div className="flex items-center gap-3 mb-3">
           <button
             onClick={() => navigate(-1)}
@@ -308,7 +308,7 @@ const SearchPage: React.FC = () => {
 
       {/* Camera Modal */}
       {showCamera && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
+        <div className="modal-overlay fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg p-4 m-4 max-w-sm w-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-serif text-lg font-medium text-[#3A3A3A]">Scan ISBN Barcode</h3>

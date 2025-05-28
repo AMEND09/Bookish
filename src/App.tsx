@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { BookProvider } from './context/BookContext';
 import { PetProvider } from './context/PetContext';
@@ -15,27 +14,37 @@ import NotesPage from './pages/NotesPage';
 import AddNotePage from './pages/AddNotePage';
 import PetPage from './pages/PetPage';
 
-function App() {
+const App: React.FC = () => {
   return (
-    <PetProvider>
-      <BookProvider>
-        <Router basename="/Bookish">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/welcome" element={<LandingPage />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/library" element={<LibraryPage />} />
-            <Route path="/book" element={<BookDetailsPage />} />
-            <Route path="/reading" element={<ReadingSessionPage />} />
-            <Route path="/notes" element={<NotesPage />} />
-            <Route path="/notes/add" element={<AddNotePage />} />
-            <Route path="/pet" element={<PetPage />} />
-            <Route path="/stats" element={<StatsPage />} />
-          </Routes>
-        </Router>
-      </BookProvider>
-    </PetProvider>
+    <>
+      {/* Custom titlebar for PWA window controls overlay */}
+      <div className="app-titlebar">
+        <div className="app-titlebar-content">
+          <div className="app-titlebar-icon">📚</div>
+          <span>Bookish</span>
+        </div>
+      </div>
+
+      <PetProvider>
+        <BookProvider>
+          <Router basename="/Bookish">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/welcome" element={<LandingPage />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/library" element={<LibraryPage />} />
+              <Route path="/book" element={<BookDetailsPage />} />
+              <Route path="/reading" element={<ReadingSessionPage />} />
+              <Route path="/notes" element={<NotesPage />} />
+              <Route path="/notes/add" element={<AddNotePage />} />
+              <Route path="/pet" element={<PetPage />} />
+              <Route path="/stats" element={<StatsPage />} />
+            </Routes>
+          </Router>
+        </BookProvider>
+      </PetProvider>
+    </>
   );
-}
+};
 
 export default App;
