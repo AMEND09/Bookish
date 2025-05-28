@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Clock, MoreVertical, Trash2, Check, Move } from 'lucide-react';
 import { useBooks } from '../context/BookContext';
+import { usePet } from '../context/PetContext';
 import { getSessionsByBook } from '../services/storage';
 
 const LibraryPage: React.FC = () => {
   const navigate = useNavigate();
-  const { books } = useBooks();  const [showDropdown, setShowDropdown] = useState<string | null>(null);
+  const { books } = useBooks();
+  const { updatePetFromBookCompletion } = usePet();const [showDropdown, setShowDropdown] = useState<string | null>(null);
   const [showMoveModal, setShowMoveModal] = useState<string | null>(null);
   const [swipeStates, setSwipeStates] = useState<Record<string, { translateX: number; isDeleting: boolean; startX?: number; startY?: number }>>({});
   const [localBooks, setLocalBooks] = useState<any[]>([]);
@@ -55,8 +57,7 @@ const LibraryPage: React.FC = () => {
       setLocalBooks(updatedBooks);
     }
     setShowDropdown(null);
-  };
-  const handleMoveBook = (bookKey: string, newCategory: string, e?: React.MouseEvent) => {
+  };  const handleMoveBook = (bookKey: string, newCategory: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     
     // Update book category in storage
@@ -77,7 +78,22 @@ const LibraryPage: React.FC = () => {
     setLocalBooks(updatedBooks);
     setShowMoveModal(null);
     setShowDropdown(null);
-  };  const handleDropdownToggle = (bookKey: string, e: React.MouseEvent) => {
+  };
+  const handleMarkAsCompleted = (bookKey: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('Mark this book as completed? This will give your pet a big experience boost!')) {
+      handleMoveBook(bookKey, 'completed');
+      
+      // Trigger pet reward
+      updatePetFromBookCompletion();
+      
+      // Show success message
+      setTimeout(() => {
+        alert('🎉 Book marked as completed! Check your pet for an experience boost!');
+      }, 100);
+    }
+    setShowDropdown(null);
+  };const handleDropdownToggle = (bookKey: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setShowDropdown(showDropdown === bookKey ? null : bookKey);
   };
@@ -300,6 +316,15 @@ const LibraryPage: React.FC = () => {
               <Move className="w-4 h-4" />
               Move to category
             </button>
+            {book.category !== 'completed' && (
+              <button
+                onClick={(e) => handleMarkAsCompleted(book.key, e)}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-green-600 hover:bg-green-50 w-full text-left"
+              >
+                <Check className="w-4 h-4" />
+                Mark as completed
+              </button>
+            )}
             <button
               onClick={(e) => handleRemoveBook(book.key, e)}
               className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"

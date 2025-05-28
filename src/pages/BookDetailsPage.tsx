@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Timer, PenLine, PlayCircle, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, BookOpen, Timer, PenLine, PlayCircle, Plus, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { getBookDetails, getBookCoverUrl } from '../services/api';
 import { useBooks } from '../context/BookContext';
+import { usePet } from '../context/PetContext';
 
 const BookDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const { books, setActiveBook, sessions, notes } = useBooks();
+  const { updatePetFromBookCompletion } = usePet();
   const [loading, setLoading] = useState(false);
   const [currentBook, setCurrentBook] = useState<any>(null);
   const [isInLibrary, setIsInLibrary] = useState(false);
@@ -111,6 +113,36 @@ const BookDetailsPage: React.FC = () => {
     }
   };
 
+  const handleMarkAsCompleted = () => {
+    if (window.confirm('Mark this book as completed? This will give your pet a big experience boost!')) {
+      // Update book category in storage
+      const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
+      const updatedBooks = savedBooks.map((book: any) => 
+        book.key === currentBook.key ? { ...book, category: 'completed', completedAt: new Date().toISOString() } : book
+      );
+      localStorage.setItem('bookish_books', JSON.stringify(updatedBooks));
+      
+      // Also update old storage for backward compatibility
+      const oldSavedBooks = JSON.parse(localStorage.getItem('myBooks') || '[]');
+      const oldUpdatedBooks = oldSavedBooks.map((book: any) => 
+        book.key === currentBook.key ? { ...book, category: 'completed', completedAt: new Date().toISOString() } : book
+      );
+      localStorage.setItem('myBooks', JSON.stringify(oldUpdatedBooks));
+      
+      // Reward the pet for completing a book
+      updatePetFromBookCompletion();
+      
+      // Clear as active book if it was currently reading
+      if (currentBook.key === (JSON.parse(localStorage.getItem('bookish_current_book') || 'null'))?.key) {
+        setActiveBook(null);
+      }
+      
+      // Show success message and navigate back
+      alert('🎉 Congratulations! You\'ve completed the book and your pet gained experience!');
+      navigate('/library');
+    }
+  };
+
   // Calculate reading progress
   const totalPages = currentBook.number_of_pages_median || 100;
   const latestSession = [...sessions]
@@ -134,6 +166,11 @@ const BookDetailsPage: React.FC = () => {
   
   // Get book notes
   const bookNotes = notes.filter(note => note.bookId === currentBook.key);
+
+  // Check if book is completed
+  const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
+  const bookInLibrary = savedBooks.find((b: any) => b.key === currentBook.key);
+  const isCompleted = bookInLibrary?.category === 'completed';
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#F7F5F3]">
@@ -301,24 +338,41 @@ const BookDetailsPage: React.FC = () => {
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-[#F0EDE8] flex gap-4 max-w-md mx-auto">
           {isInLibrary ? (
             <>
-              <button
-                onClick={() => navigate('/notes/add')}
-                className="flex-1 py-3 px-4 bg-white border border-[#D2691E] text-[#D2691E] rounded-lg font-medium text-sm flex items-center justify-center gap-2"
-              >
-                <PenLine className="w-5 h-5" />
-                Add Note
-              </button>
-              
-              <button
-                onClick={() => {
-                  setActiveBook(currentBook);
-                  navigate('/reading');
-                }}
-                className="flex-1 py-3 px-4 bg-[#D2691E] text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2"
-              >
-                <PlayCircle className="w-5 h-5" />
-                Start Reading
-              </button>
+              {isCompleted ? (
+                <div className="flex-1 py-3 px-4 bg-green-100 text-green-700 rounded-lg font-medium text-sm flex items-center justify-center gap-2">
+                  <Check className="w-5 h-5" />
+                  Completed
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={() => navigate('/notes/add')}
+                    className="flex-1 py-3 px-4 bg-white border border-[#D2691E] text-[#D2691E] rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+                  >
+                    <PenLine className="w-5 h-5" />
+                    Add Note
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setActiveBook(currentBook);
+                      navigate('/reading');
+                    }}
+                    className="flex-1 py-3 px-4 bg-[#D2691E] text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+                  >
+                    <PlayCircle className="w-5 h-5" />
+                    Start Reading
+                  </button>
+                  
+                  <button
+                    onClick={handleMarkAsCompleted}
+                    className="py-3 px-3 bg-green-600 text-white rounded-lg font-medium text-sm flex items-center justify-center"
+                    title="Mark as Completed"
+                  >
+                    <Check className="w-5 h-5" />
+                  </button>
+                </>
+              )}
             </>
           ) : (
             <>
