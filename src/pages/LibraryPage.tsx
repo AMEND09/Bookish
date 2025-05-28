@@ -4,11 +4,14 @@ import { ArrowLeft, BookOpen, Clock, MoreVertical, Trash2, Check, Move } from 'l
 import { useBooks } from '../context/BookContext';
 import { usePet } from '../context/PetContext';
 import { getSessionsByBook } from '../services/storage';
+import ConfirmationModal from '../components/ui/ConfirmationModal';
+import { useConfirmationModal } from '../hooks/useConfirmationModal';
 
 const LibraryPage: React.FC = () => {
   const navigate = useNavigate();
   const { books } = useBooks();
-  const { updatePetFromBookCompletion } = usePet();const [showDropdown, setShowDropdown] = useState<string | null>(null);
+  const { updatePetFromBookCompletion } = usePet();
+  const modal = useConfirmationModal();const [showDropdown, setShowDropdown] = useState<string | null>(null);
   const [showMoveModal, setShowMoveModal] = useState<string | null>(null);
   const [swipeStates, setSwipeStates] = useState<Record<string, { translateX: number; isDeleting: boolean; startX?: number; startY?: number }>>({});
   const [localBooks, setLocalBooks] = useState<any[]>([]);
@@ -39,25 +42,32 @@ const LibraryPage: React.FC = () => {
   const handleBookClick = (book: any) => {
     // Navigate to book details page with book data
     navigate(`/book?book=${book.key}`, { state: { bookData: book } });
-  };
-  const handleRemoveBook = (bookKey: string, e: React.MouseEvent) => {
+  };  const handleRemoveBook = (bookKey: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm('Are you sure you want to remove this book from your library?')) {
-      // Remove book from local storage using the same key structure as the app
-      const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
-      const updatedBooks = savedBooks.filter((book: any) => book.key !== bookKey);
-      localStorage.setItem('bookish_books', JSON.stringify(updatedBooks));
-      
-      // Also remove from the old storage key for backward compatibility
-      const oldSavedBooks = JSON.parse(localStorage.getItem('myBooks') || '[]');
-      const oldUpdatedBooks = oldSavedBooks.filter((book: any) => book.key !== bookKey);
-      localStorage.setItem('myBooks', JSON.stringify(oldUpdatedBooks));
-      
-      // Update local state instead of page refresh
-      setLocalBooks(updatedBooks);
-    }
+    modal.showConfirm(
+      'Remove Book',
+      'Are you sure you want to remove this book from your library?',
+      () => {
+        // Remove book from local storage using the same key structure as the app
+        const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
+        const updatedBooks = savedBooks.filter((book: any) => book.key !== bookKey);
+        localStorage.setItem('bookish_books', JSON.stringify(updatedBooks));
+        
+        // Also remove from the old storage key for backward compatibility
+        const oldSavedBooks = JSON.parse(localStorage.getItem('myBooks') || '[]');
+        const oldUpdatedBooks = oldSavedBooks.filter((book: any) => book.key !== bookKey);
+        localStorage.setItem('myBooks', JSON.stringify(oldUpdatedBooks));
+        
+        // Update local state instead of page refresh
+        setLocalBooks(updatedBooks);
+      },
+      {
+        confirmText: 'Remove',
+        cancelText: 'Keep Book'
+      }
+    );
     setShowDropdown(null);
-  };  const handleMoveBook = (bookKey: string, newCategory: string, e?: React.MouseEvent) => {
+  };const handleMoveBook = (bookKey: string, newCategory: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     
     // Update book category in storage
@@ -78,20 +88,31 @@ const LibraryPage: React.FC = () => {
     setLocalBooks(updatedBooks);
     setShowMoveModal(null);
     setShowDropdown(null);
-  };
-  const handleMarkAsCompleted = (bookKey: string, e: React.MouseEvent) => {
+  };  const handleMarkAsCompleted = (bookKey: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm('Mark this book as completed? This will give your pet a big experience boost!')) {
-      handleMoveBook(bookKey, 'completed');
-      
-      // Trigger pet reward
-      updatePetFromBookCompletion();
-      
-      // Show success message
-      setTimeout(() => {
-        alert('🎉 Book marked as completed! Check your pet for an experience boost!');
-      }, 100);
-    }
+    modal.showConfirm(
+      'Mark as Completed',
+      'Mark this book as completed? This will give your pet a big experience boost!',
+      () => {
+        handleMoveBook(bookKey, 'completed');
+        
+        // Trigger pet reward
+        updatePetFromBookCompletion();
+        
+        // Show success message
+        setTimeout(() => {
+          modal.showAlert(
+            'Book Completed!',
+            '🎉 Book marked as completed! Check your pet for an experience boost!',
+            'success'
+          );
+        }, 100);
+      },
+      {
+        confirmText: 'Mark Complete',
+        cancelText: 'Cancel'
+      }
+    );
     setShowDropdown(null);
   };const handleDropdownToggle = (bookKey: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -197,26 +218,34 @@ const LibraryPage: React.FC = () => {
         }));
       }
     };    const confirmDelete = () => {
-      if (window.confirm('Are you sure you want to remove this book from your library?')) {
-        // Remove from both storage locations
-        const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
-        const updatedBooks = savedBooks.filter((b: any) => b.key !== book.key);
-        localStorage.setItem('bookish_books', JSON.stringify(updatedBooks));
-        
-        const oldSavedBooks = JSON.parse(localStorage.getItem('myBooks') || '[]');
-        const oldUpdatedBooks = oldSavedBooks.filter((b: any) => b.key !== book.key);
-        localStorage.setItem('myBooks', JSON.stringify(oldUpdatedBooks));
-        
-        // Update local state instead of page refresh
-        setLocalBooks(updatedBooks);
-        
-        // Reset swipe state
-        setSwipeStates(prev => {
-          const newState = { ...prev };
-          delete newState[book.key];
-          return newState;
-        });
-      }
+      modal.showConfirm(
+        'Remove Book',
+        'Are you sure you want to remove this book from your library?',
+        () => {
+          // Remove from both storage locations
+          const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
+          const updatedBooks = savedBooks.filter((b: any) => b.key !== book.key);
+          localStorage.setItem('bookish_books', JSON.stringify(updatedBooks));
+          
+          const oldSavedBooks = JSON.parse(localStorage.getItem('myBooks') || '[]');
+          const oldUpdatedBooks = oldSavedBooks.filter((b: any) => b.key !== book.key);
+          localStorage.setItem('myBooks', JSON.stringify(oldUpdatedBooks));
+          
+          // Update local state instead of page refresh
+          setLocalBooks(updatedBooks);
+          
+          // Reset swipe state
+          setSwipeStates(prev => {
+            const newState = { ...prev };
+            delete newState[book.key];
+            return newState;
+          });
+        },
+        {
+          confirmText: 'Remove',
+          cancelText: 'Keep Book'
+        }
+      );
     };
 
     const cancelDelete = () => {
@@ -459,10 +488,21 @@ const LibraryPage: React.FC = () => {
               className="w-full mt-4 py-2 text-sm text-[#8B7355] hover:text-[#3A3A3A] transition-colors"
             >
               Cancel
-            </button>
-          </div>
+            </button>          </div>
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={modal.isOpen}
+        onClose={modal.close}
+        onConfirm={modal.onConfirm || undefined}
+        title={modal.config.title}
+        message={modal.config.message}
+        type={modal.config.type}
+        confirmText={modal.config.confirmText}
+        cancelText={modal.config.cancelText}
+      />
     </div>
   );
 };

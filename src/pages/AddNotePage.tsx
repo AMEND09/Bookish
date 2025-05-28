@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Save, BookOpen } from 'lucide-react';
-import { getNotes } from '../services/storage';
 import { useBooks } from '../context/BookContext';
+import { v4 as uuidv4 } from 'uuid';
 import { ReadingNote } from '../types';
+import ConfirmationModal from '../components/ui/ConfirmationModal';
+import { useConfirmationModal } from '../hooks/useConfirmationModal';
 
 const AddNotePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { books, currentBook, addNote } = useBooks();
+  const { books, currentBook, addNote, notes, updateNote } = useBooks();
+  const modal = useConfirmationModal();
   const editId = searchParams.get('edit');
   
   const [selectedBookId, setSelectedBookId] = useState<string>(currentBook?.key || '');
@@ -18,8 +21,7 @@ const AddNotePage: React.FC = () => {
 
   useEffect(() => {
     if (editId) {
-      const notes = getNotes();
-      const noteToEdit = notes.find(note => note.id === editId);
+      const noteToEdit = notes.find((note: ReadingNote) => note.id === editId);
       if (noteToEdit) {
         setSelectedBookId(noteToEdit.bookId);
         setContent(noteToEdit.content);
@@ -27,39 +29,72 @@ const AddNotePage: React.FC = () => {
         setChapter(noteToEdit.chapter || '');
       }
     }
-  }, [editId]);
+  }, [editId, notes]);
 
   const handleSave = () => {
-    if (!selectedBookId || !content.trim()) {
-      alert('Please select a book and enter your note content.');
+    if (!content.trim()) {
+      modal.showAlert(
+        'Content Required',
+        'Please add some content to your note before saving.',
+        'alert'
+      );
       return;
-    }    const note: ReadingNote = {
-      id: editId || Date.now().toString(),
+    }
+
+    const note: ReadingNote = {
+      id: editId || uuidv4(),
       bookId: selectedBookId,
       content: content.trim(),
       page: page ? parseInt(page) : undefined,
       chapter: chapter.trim() || undefined,
-      createdAt: editId ? getNotes().find(n => n.id === editId)?.createdAt || new Date().toISOString() : new Date().toISOString(),
+      createdAt: editId ? notes.find((n: ReadingNote) => n.id === editId)?.createdAt || new Date().toISOString() : new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    if (editId) {
+    if (editId && updateNote) {
       // Update existing note
-      const notes = getNotes();
-      const updatedNotes = notes.map(n => n.id === editId ? note : n);
-      localStorage.setItem('bookish_notes', JSON.stringify(updatedNotes));
+      updateNote(note);
     } else {
       // Add new note
       addNote(note);
-    }    navigate('/notes');
+    }
+
+    modal.showAlert(
+      'Note Saved',
+      'Your note has been saved successfully!',
+      'success'
+    );
+    
+    setTimeout(() => {
+      navigate('/notes');
+    }, 1500);
+  };
+
+  const handleBackPress = () => {
+    if (content.trim() || chapter.trim() || page.trim()) {
+      modal.showConfirm(
+        'Discard Note',
+        'You have unsaved changes. Are you sure you want to go back?',
+        () => {
+          navigate(-1);
+        },
+        {
+          confirmText: 'Discard',
+          cancelText: 'Keep Editing'
+        }
+      );
+    } else {
+      navigate(-1);
+    }
   };
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#F7F5F3]">
       <header className="p-4 bg-[#F7F5F3] border-b border-[#E8E3DD]">
-        <div className="flex items-center justify-between">          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => navigate(-1)}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleBackPress}
               className="w-8 h-8 rounded-full bg-[#F0EDE8] flex items-center justify-center"
             >
               <ArrowLeft className="w-5 h-5 text-[#8B7355]" />
@@ -68,9 +103,10 @@ const AddNotePage: React.FC = () => {
               {editId ? 'Edit Note' : 'Add Note'}
             </h1>
           </div>
+
           <button
             onClick={handleSave}
-            className="bg-[#8B7355] text-white px-4 py-2 rounded-xl font-medium flex items-center gap-2"
+            className="flex items-center gap-2 bg-[#8B7355] text-white px-4 py-2 rounded-lg text-sm font-medium"
           >
             <Save className="w-4 h-4" />
             Save
@@ -158,6 +194,18 @@ const AddNotePage: React.FC = () => {
           </ul>
         </div>
       </main>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={modal.isOpen}
+        onClose={modal.close}
+        onConfirm={modal.onConfirm || undefined}
+        title={modal.config.title}
+        message={modal.config.message}
+        type={modal.config.type}
+        confirmText={modal.config.confirmText}
+        cancelText={modal.config.cancelText}
+      />
     </div>
   );
 };

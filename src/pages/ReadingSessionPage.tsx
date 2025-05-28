@@ -7,11 +7,14 @@ import { useReadingTimer } from '../hooks/useReadingTimer';
 import { v4 as uuidv4 } from 'uuid';
 import { ReadingNote } from '../types';
 import { getBookCoverUrl } from '../services/api';
+import ConfirmationModal from '../components/ui/ConfirmationModal';
+import { useConfirmationModal } from '../hooks/useConfirmationModal';
 
 const ReadingSessionPage: React.FC = () => {
   const navigate = useNavigate();
   const { currentBook, addSession, addNote } = useBooks();
   const { updatePetFromReading } = usePet();
+  const modal = useConfirmationModal();
   
   const [startPage, setStartPage] = useState(1);
   const [endPage, setEndPage] = useState(1);
@@ -53,7 +56,11 @@ const ReadingSessionPage: React.FC = () => {
   
   const handleFinishSession = () => {
     if (endPage < startPage) {
-      alert('End page cannot be less than start page');
+      modal.showAlert(
+        'Invalid Page Range',
+        'End page cannot be less than start page',
+        'alert'
+      );
       return;
     }
     
@@ -97,10 +104,18 @@ const ReadingSessionPage: React.FC = () => {
         <button
           onClick={() => {
             if (isActive) {
-              if (confirm('Do you want to discard this reading session?')) {
-                resetTimer();
-                navigate(-1);
-              }
+              modal.showConfirm(
+                'Discard Session',
+                'Do you want to discard this reading session?',
+                () => {
+                  resetTimer();
+                  navigate(-1);
+                },
+                {
+                  confirmText: 'Discard',
+                  cancelText: 'Continue Reading'
+                }
+              );
             } else {
               navigate(-1);
             }
@@ -223,10 +238,18 @@ const ReadingSessionPage: React.FC = () => {
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-[#F0EDE8] flex gap-4 max-w-md mx-auto">
         <button
           onClick={() => {
-            if (confirm('Are you sure you want to cancel this session?')) {
-              resetTimer();
-              navigate(-1);
-            }
+            modal.showConfirm(
+              'Cancel Session',
+              'Are you sure you want to cancel this session? All progress will be lost.',
+              () => {
+                resetTimer();
+                navigate(-1);
+              },
+              {
+                confirmText: 'Yes, Cancel',
+                cancelText: 'Keep Reading'
+              }
+            );
           }}
           className="flex-1 py-3 px-4 bg-white border border-[#E5E5E5] text-[#8B7355] rounded-lg font-medium text-sm flex items-center justify-center gap-2"
         >
@@ -243,6 +266,18 @@ const ReadingSessionPage: React.FC = () => {
           Finish
         </button>
       </div>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={modal.isOpen}
+        onClose={modal.close}
+        onConfirm={modal.onConfirm || undefined}
+        title={modal.config.title}
+        message={modal.config.message}
+        type={modal.config.type}
+        confirmText={modal.config.confirmText}
+        cancelText={modal.config.cancelText}
+      />
     </div>
   );
 };

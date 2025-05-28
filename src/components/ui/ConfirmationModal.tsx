@@ -27,13 +27,13 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   const getIcon = () => {
     switch (type) {
       case 'alert':
-        return <AlertTriangle className="w-6 h-6 text-red-500" />;
+        return <AlertTriangle className="w-8 h-8 text-red-500" />;
       case 'success':
-        return <CheckCircle className="w-6 h-6 text-green-500" />;
+        return <CheckCircle className="w-8 h-8 text-green-500" />;
       case 'info':
-        return <Info className="w-6 h-6 text-blue-500" />;
+        return <Info className="w-8 h-8 text-blue-500" />;
       default:
-        return <AlertTriangle className="w-6 h-6 text-[#D2691E]" />;
+        return <AlertTriangle className="w-8 h-8 text-[#D2691E]" />;
     }
   };
 
@@ -46,53 +46,51 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-xl max-w-sm w-full mx-4">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#F0EDE8]">
-          <div className="flex items-center gap-3">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-auto">
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-4">
             {getIcon()}
-            <h3 className="font-serif text-lg font-medium text-[#3A3A3A]">{title}</h3>
+            <div className="flex-1">
+              <h3 className="font-serif text-lg font-medium text-[#3A3A3A]">{title}</h3>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F0EDE8] transition-colors"
+            >
+              <X className="w-5 h-5 text-[#8B7355]" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F0EDE8] transition-colors"
-          >
-            <X className="w-5 h-5 text-[#8B7355]" />
-          </button>
-        </div>
 
-        {/* Content */}
-        <div className="p-4">
-          <p className="text-sm text-[#3A3A3A] leading-relaxed">{message}</p>
-        </div>
+          {/* Message */}
+          <p className="text-sm text-[#3A3A3A] leading-relaxed mb-6">
+            {message}
+          </p>
 
-        {/* Actions */}
-        <div className="flex gap-3 p-4 pt-0">
-          {type === 'confirm' && (
-            <>
+          {/* Actions */}
+          <div className="flex gap-3">
+            {type === 'confirm' && (
               <button
                 onClick={onClose}
-                className="flex-1 py-2 px-4 bg-white border border-[#E8E3DD] text-[#8B7355] rounded-lg font-medium text-sm hover:bg-[#F7F5F3] transition-colors"
+                className="flex-1 py-3 px-4 bg-[#F0EDE8] text-[#8B7355] rounded-lg font-medium text-sm hover:bg-[#E8E3DD] transition-colors"
               >
                 {cancelText}
               </button>
-              <button
-                onClick={handleConfirm}
-                className="flex-1 py-2 px-4 bg-[#D2691E] text-white rounded-lg font-medium text-sm hover:bg-[#B8541A] transition-colors"
-              >
-                {confirmText}
-              </button>
-            </>
-          )}
-          
-          {(type === 'alert' || type === 'success' || type === 'info') && (
+            )}
+            
             <button
-              onClick={onClose}
-              className="w-full py-2 px-4 bg-[#8B7355] text-white rounded-lg font-medium text-sm hover:bg-[#7A6349] transition-colors"
+              onClick={handleConfirm}
+              className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-colors ${
+                type === 'success' 
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : type === 'alert'
+                  ? 'bg-red-600 text-white hover:bg-red-700'
+                  : 'bg-[#D2691E] text-white hover:bg-[#B8541A]'
+              }`}
             >
-              OK
+              {type === 'confirm' ? confirmText : 'OK'}
             </button>
-          )}
+          </div>
         </div>
       </div>
     </div>

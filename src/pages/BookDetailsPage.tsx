@@ -4,6 +4,8 @@ import { ArrowLeft, BookOpen, Timer, PenLine, PlayCircle, Plus, ChevronDown, Che
 import { getBookDetails } from '../services/api';
 import { useBooks } from '../context/BookContext';
 import { usePet } from '../context/PetContext';
+import ConfirmationModal from '../components/ui/ConfirmationModal';
+import { useConfirmationModal } from '../hooks/useConfirmationModal';
 
 const BookDetailsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -16,6 +18,7 @@ const BookDetailsPage: React.FC = () => {
   const [isInLibrary, setIsInLibrary] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const modal = useConfirmationModal();
   
   const bookKey = searchParams.get('book');
 
@@ -114,37 +117,52 @@ const BookDetailsPage: React.FC = () => {
   };
 
   const handleMarkAsCompleted = () => {
-    if (window.confirm('Mark this book as completed? This will give your pet a big experience boost!')) {
-      // Update book category in storage
-      const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
-      const updatedBooks = savedBooks.map((book: any) => 
-        book.key === currentBook.key ? { ...book, category: 'completed', completedAt: new Date().toISOString() } : book
-      );
-      localStorage.setItem('bookish_books', JSON.stringify(updatedBooks));
-      
-      // Also update old storage for backward compatibility
-      const oldSavedBooks = JSON.parse(localStorage.getItem('myBooks') || '[]');
-      const oldUpdatedBooks = oldSavedBooks.map((book: any) => 
-        book.key === currentBook.key ? { ...book, category: 'completed', completedAt: new Date().toISOString() } : book
-      );
-      localStorage.setItem('myBooks', JSON.stringify(oldUpdatedBooks));
-      
-      // Reward the pet for completing a book
-      updatePetFromBookCompletion();
-      
-      // Clear as active book if it was currently reading
-      if (currentBook.key === (JSON.parse(localStorage.getItem('bookish_current_book') || 'null'))?.key) {
-        setActiveBook(null);
+    modal.showConfirm(
+      'Mark as Completed',
+      'Mark this book as completed? This will give your pet a big experience boost!',
+      () => {
+        // Update book category in storage
+        const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
+        const updatedBooks = savedBooks.map((book: any) => 
+          book.key === currentBook.key ? { ...book, category: 'completed', completedAt: new Date().toISOString() } : book
+        );
+        localStorage.setItem('bookish_books', JSON.stringify(updatedBooks));
+        
+        // Also update old storage for backward compatibility
+        const oldSavedBooks = JSON.parse(localStorage.getItem('myBooks') || '[]');
+        const oldUpdatedBooks = oldSavedBooks.map((book: any) => 
+          book.key === currentBook.key ? { ...book, category: 'completed', completedAt: new Date().toISOString() } : book
+        );
+        localStorage.setItem('myBooks', JSON.stringify(oldUpdatedBooks));
+        
+        // Reward the pet for completing a book
+        updatePetFromBookCompletion();
+        
+        // Clear as active book if it was currently reading
+        if (currentBook.key === (JSON.parse(localStorage.getItem('bookish_current_book') || 'null'))?.key) {
+          setActiveBook(null);
+        }
+        
+        // Show success message and navigate back
+        modal.showAlert(
+          'Congratulations!',
+          '🎉 You\'ve completed the book and your pet gained experience!',
+          'success'
+        );
+        
+        setTimeout(() => {
+          navigate('/library');
+        }, 1500);
+      },
+      {
+        confirmText: 'Mark Complete',
+        cancelText: 'Cancel'
       }
-      
-      // Show success message and navigate back
-      alert('🎉 Congratulations! You\'ve completed the book and your pet gained experience!');
-      navigate('/library');
-    }
+    );
   };
 
   // Calculate reading progress
-  const totalPages = currentBook.number_of_pages_median || currentBook.number_of_pages || 0;
+  const totalPages = currentBook.number_of_pages_median || 0;
   const latestSession = [...sessions]
     .filter(s => s.bookId === currentBook.key)
     .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())[0];
@@ -431,6 +449,18 @@ const BookDetailsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={modal.isOpen}
+        onClose={modal.close}
+        onConfirm={modal.onConfirm || undefined}
+        title={modal.config.title}
+        message={modal.config.message}
+        type={modal.config.type}
+        confirmText={modal.config.confirmText}
+        cancelText={modal.config.cancelText}
+      />
     </div>
   );
 };

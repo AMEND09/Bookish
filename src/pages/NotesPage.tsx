@@ -2,15 +2,26 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, BookOpen, Calendar, Edit3, Trash2 } from 'lucide-react';
 import { useBooks } from '../context/BookContext';
+import ConfirmationModal from '../components/ui/ConfirmationModal';
+import { useConfirmationModal } from '../hooks/useConfirmationModal';
 
 const NotesPage: React.FC = () => {
   const navigate = useNavigate();
   const { notes, books, deleteNote } = useBooks();
+  const modal = useConfirmationModal();
 
   const handleDeleteNote = (noteId: string) => {
-    if (window.confirm('Are you sure you want to delete this note?')) {
-      deleteNote(noteId);
-    }
+    modal.showConfirm(
+      'Delete Note',
+      'Are you sure you want to delete this note? This action cannot be undone.',
+      () => {
+        deleteNote(noteId);
+      },
+      {
+        confirmText: 'Delete',
+        cancelText: 'Cancel'
+      }
+    );
   };
 
   const getBookTitle = (bookId: string) => {
@@ -109,6 +120,18 @@ const NotesPage: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={modal.isOpen}
+        onClose={modal.close}
+        onConfirm={modal.onConfirm || undefined}
+        title={modal.config.title}
+        message={modal.config.message}
+        type={modal.config.type}
+        confirmText={modal.config.confirmText}
+        cancelText={modal.config.cancelText}
+      />
     </div>
   );
 };
