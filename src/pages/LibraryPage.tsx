@@ -6,7 +6,7 @@ import { getSessionsByBook } from '../services/storage';
 
 const LibraryPage: React.FC = () => {
   const navigate = useNavigate();
-  const { books, setActiveBook } = useBooks();  const [showDropdown, setShowDropdown] = useState<string | null>(null);
+  const { books } = useBooks();  const [showDropdown, setShowDropdown] = useState<string | null>(null);
   const [showMoveModal, setShowMoveModal] = useState<string | null>(null);
   const [swipeStates, setSwipeStates] = useState<Record<string, { translateX: number; isDeleting: boolean; startX?: number; startY?: number }>>({});
   const [localBooks, setLocalBooks] = useState<any[]>([]);
@@ -34,10 +34,9 @@ const LibraryPage: React.FC = () => {
 
   // Use local books if available, otherwise use context books
   const displayBooks = localBooks.length > 0 ? localBooks : books;
-
   const handleBookClick = (book: any) => {
-    setActiveBook(book);
-    navigate('/book');
+    // Navigate to book details page with book data
+    navigate(`/book?book=${book.key}`, { state: { bookData: book } });
   };
   const handleRemoveBook = (bookKey: string, e: React.MouseEvent) => {
     e.stopPropagation();
