@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, BookOpenCheck, Bookmark, Flame } from 'lucide-react';
+import { Clock, BookOpenCheck, Flame } from 'lucide-react';
 import { getStats, getStreak } from '../../services/storage';
 
 interface StatCardProps {

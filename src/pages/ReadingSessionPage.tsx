@@ -42,14 +42,7 @@ const ReadingSessionPage: React.FC = () => {
             setStartPage(parsed.startPage);
             setEndPage(parsed.startPage);
             
-            // Show notification that timer was restored
-            if (parsed.timerState.isActive || parsed.timerState.totalElapsed > 0) {
-              modal.showAlert(
-                'Timer Restored',
-                'Your reading session has been restored. You can continue where you left off.',
-                'success'
-              );
-            }
+            // Timer restored silently - no modal needed
             return;
           }
         } catch (error) {
