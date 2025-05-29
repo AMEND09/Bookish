@@ -22,17 +22,18 @@ const ReadingSessionPage: React.FC = () => {
   const [noteContent, setNoteContent] = useState('');
   const [noteChapter, setNoteChapter] = useState('');
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   
-  // Initialize timer
+  // Initialize timer - remove startPage dependency to avoid circular updates
   const { isActive, elapsedTime, startTimer, pauseTimer, stopTimer, resetTimer } = 
     useReadingTimer({ 
       bookId: currentBook?.key || '', 
-      startPage: startPage 
+      startPage: 1 // Use a default value
     });
   
   // Initialize start page from latest session or active timer
   useEffect(() => {
-    if (currentBook) {
+    if (currentBook && !isInitialized) {
       // Check if there's an active timer first
       const activeTimer = localStorage.getItem('bookish_active_timer');
       if (activeTimer) {
@@ -41,8 +42,7 @@ const ReadingSessionPage: React.FC = () => {
           if (parsed.bookId === currentBook.key) {
             setStartPage(parsed.startPage);
             setEndPage(parsed.startPage);
-            
-            // Timer restored silently - no modal needed
+            setIsInitialized(true);
             return;
           }
         } catch (error) {
@@ -64,8 +64,9 @@ const ReadingSessionPage: React.FC = () => {
         setStartPage(lastPage);
         setEndPage(lastPage);
       }
+      setIsInitialized(true);
     }
-  }, [currentBook, modal]);
+  }, [currentBook, isInitialized]);
 
   // Warn user when leaving page with active timer
   useEffect(() => {
@@ -86,39 +87,67 @@ const ReadingSessionPage: React.FC = () => {
   }
   
   const handleFinishSession = () => {
-    if (endPage < startPage) {
+    try {
+      // Validate inputs
+      if (!currentBook) {
+        modal.showAlert('Error', 'No book selected', 'alert');
+        return;
+      }
+
+      if (endPage < startPage) {
+        modal.showAlert(
+          'Invalid Page Range',
+          'End page cannot be less than start page',
+          'alert'
+        );
+        return;
+      }
+
+      if (elapsedTime <= 0) {
+        modal.showAlert(
+          'No Time Recorded',
+          'Please start the timer to record reading time',
+          'alert'
+        );
+        return;
+      }
+      
+      const session = stopTimer(endPage);
+      if (!session) {
+        throw new Error('Failed to create session');
+      }
+      
+      addSession(session);
+      
+      // Feed the pet based on reading time
+      if (session.duration) {
+        updatePetFromReading(session.duration);
+      }
+      
+      // If there's a note, save it
+      if (noteContent.trim()) {
+        const note: ReadingNote = {
+          id: uuidv4(),
+          bookId: currentBook.key,
+          page: endPage,
+          chapter: noteChapter.trim() || undefined,
+          content: noteContent.trim(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        addNote(note);
+      }
+      
+      navigate('/');
+    } catch (error) {
+      console.error('Error finishing session:', error);
       modal.showAlert(
-        'Invalid Page Range',
-        'End page cannot be less than start page',
+        'Error',
+        'Failed to save reading session. Please try again.',
         'alert'
       );
-      return;
     }
-    
-    const session = stopTimer(endPage);
-    addSession(session);
-    
-    // Feed the pet based on reading time
-    if (session.duration) {
-      updatePetFromReading(session.duration);
-    }
-    
-    // If there's a note, save it
-    if (noteContent.trim()) {
-      const note: ReadingNote = {
-        id: uuidv4(),
-        bookId: currentBook.key,
-        page: endPage,
-        chapter: noteChapter.trim() || undefined,
-        content: noteContent.trim(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      addNote(note);
-    }
-    
-    navigate('/');
   };
   
   const formatTime = (seconds: number) => {
@@ -144,67 +173,80 @@ const ReadingSessionPage: React.FC = () => {
 
   // Handle end page change and check for completion
   const handleEndPageChange = (newEndPage: number) => {
-    setEndPage(newEndPage);
+    // Validate the new end page
+    const pageNum = Math.max(startPage, Math.min(newEndPage, maxPages));
+    setEndPage(pageNum);
     
     // Check if user reached the last page
-    if (currentBook?.number_of_pages_median && newEndPage >= currentBook.number_of_pages_median) {
+    if (currentBook?.number_of_pages_median && pageNum >= currentBook.number_of_pages_median) {
       setShowCompletionModal(true);
     }
   };
 
   const handleMarkAsFinished = () => {
-    // Complete the reading session first
-    const session = stopTimer(endPage);
-    addSession(session);
-    
-    // Feed the pet based on reading time
-    if (session.duration) {
-      updatePetFromReading(session.duration);
+    try {
+      // Complete the reading session first
+      const session = stopTimer(endPage);
+      if (session) {
+        addSession(session);
+        
+        // Feed the pet based on reading time
+        if (session.duration) {
+          updatePetFromReading(session.duration);
+        }
+      }
+      
+      // Save note if exists
+      if (noteContent.trim()) {
+        const note: ReadingNote = {
+          id: uuidv4(),
+          bookId: currentBook.key,
+          page: endPage,
+          chapter: noteChapter.trim() || undefined,
+          content: noteContent.trim(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        addNote(note);
+      }
+      
+      // Mark book as completed
+      const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
+      const updatedBooks = savedBooks.map((book: any) => 
+        book.key === currentBook.key ? { ...book, category: 'completed', completedAt: new Date().toISOString() } : book
+      );
+      localStorage.setItem('bookish_books', JSON.stringify(updatedBooks));
+      
+      // Also update old storage for backward compatibility
+      const oldSavedBooks = JSON.parse(localStorage.getItem('myBooks') || '[]');
+      const oldUpdatedBooks = oldSavedBooks.map((book: any) => 
+        book.key === currentBook.key ? { ...book, category: 'completed', completedAt: new Date().toISOString() } : book
+      );
+      localStorage.setItem('myBooks', JSON.stringify(oldUpdatedBooks));
+      
+      // Clear as active book
+      localStorage.removeItem('bookish_current_book');
+      
+      // Reward the pet for completing a book
+      updatePetFromReading(session?.duration || 0, true); // Pass true for book completion
+      
+      modal.showAlert(
+        'Congratulations!',
+        '🎉 You\'ve completed the book and your pet gained bonus experience!',
+        'success'
+      );
+      
+      setTimeout(() => {
+        navigate('/library');
+      }, 2000);
+    } catch (error) {
+      console.error('Error marking book as finished:', error);
+      modal.showAlert(
+        'Error',
+        'Failed to mark book as completed. Please try again.',
+        'alert'
+      );
     }
-    
-    // Save note if exists
-    if (noteContent.trim()) {
-      const note: ReadingNote = {
-        id: uuidv4(),
-        bookId: currentBook.key,
-        page: endPage,
-        chapter: noteChapter.trim() || undefined,
-        content: noteContent.trim(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      addNote(note);
-    }
-    
-    // Mark book as completed
-    const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
-    const updatedBooks = savedBooks.map((book: any) => 
-      book.key === currentBook.key ? { ...book, category: 'completed', completedAt: new Date().toISOString() } : book
-    );
-    localStorage.setItem('bookish_books', JSON.stringify(updatedBooks));
-    
-    // Also update old storage for backward compatibility
-    const oldSavedBooks = JSON.parse(localStorage.getItem('myBooks') || '[]');
-    const oldUpdatedBooks = oldSavedBooks.map((book: any) => 
-      book.key === currentBook.key ? { ...book, category: 'completed', completedAt: new Date().toISOString() } : book
-    );
-    localStorage.setItem('myBooks', JSON.stringify(oldUpdatedBooks));
-    
-    // Clear as active book
-    localStorage.removeItem('bookish_current_book');
-    
-    // Reward the pet for completing a book
-    updatePetFromReading(session.duration || 0, true); // Pass true for book completion
-    
-    modal.showAlert(
-      'Congratulations!',
-      '🎉 You\'ve completed the book and your pet gained bonus experience!',
-      'success'
-    );
-    
-    setTimeout(() => {
-      navigate('/library');
-    }, 2000);
   };
 
   return (
@@ -299,7 +341,14 @@ const ReadingSessionPage: React.FC = () => {
                 <input
                   type="number"
                   value={startPage}
-                  onChange={(e) => setStartPage(parseInt(e.target.value) || 1)}
+                  onChange={(e) => {
+                    const newStartPage = Math.max(1, Math.min(parseInt(e.target.value) || 1, maxPages));
+                    setStartPage(newStartPage);
+                    // Ensure end page is not less than start page
+                    if (endPage < newStartPage) {
+                      setEndPage(newStartPage);
+                    }
+                  }}
                   min="1"
                   max={maxPages}
                   className="w-full p-2 border border-[#E5E5E5] rounded-md text-[#3A3A3A]"
@@ -312,7 +361,7 @@ const ReadingSessionPage: React.FC = () => {
                 <input
                   type="number"
                   value={endPage}
-                  onChange={(e) => handleEndPageChange(parseInt(e.target.value) || 1)}
+                  onChange={(e) => handleEndPageChange(parseInt(e.target.value) || startPage)}
                   min={startPage}
                   max={maxPages}
                   className="w-full p-2 border border-[#E5E5E5] rounded-md text-[#3A3A3A]"
@@ -417,8 +466,8 @@ const ReadingSessionPage: React.FC = () => {
         ) : (
           <button
             onClick={handleFinishSession}
-            className="flex-1 py-3 px-4 bg-[#D2691E] text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2"
-            disabled={!elapsedTime}
+            className="flex-1 py-3 px-4 bg-[#D2691E] text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={elapsedTime <= 0 || endPage < startPage}
           >
             <Check className="w-5 h-5" />
             Finish Session
