@@ -201,7 +201,7 @@ const SearchPage: React.FC = () => {
   };
   
   const handleBookSelect = (book: Book) => {
-    // Navigate to book details using query parameters
+    // Navigate to book details - using the route that exists based on LibraryPage
     navigate(`/book?book=${encodeURIComponent(book.key)}`, {
       state: {
         bookData: book

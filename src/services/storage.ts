@@ -10,6 +10,7 @@ const PET_KEY = 'bookish_pet';
 const STATS_KEY = 'bookish_stats';
 const SETTINGS_KEY = 'bookish_settings';
 const STREAK_KEY = 'bookish_streak';
+const CACHED_BOOKS_KEY = 'bookish_cached_books';
 
 // Helper functions
 const getItem = <T>(key: string, defaultValue: T): T => {
@@ -26,6 +27,35 @@ export const getBooks = (): Book[] => {
   return getItem<Book[]>(BOOKS_KEY, []);
 };
 
+export const getCachedBookDetails = (bookKey: string): Book | null => {
+  const cachedBooks = getItem<Record<string, Book & { cached_at: string }>>(CACHED_BOOKS_KEY, {});
+  return cachedBooks[bookKey] || null;
+};
+
+export const cacheBookDetails = (book: Book): void => {
+  const cachedBooks = getItem<Record<string, Book & { cached_at: string }>>(CACHED_BOOKS_KEY, {});
+  cachedBooks[book.key] = {
+    ...book,
+    cached_at: new Date().toISOString()
+  } as Book & { cached_at: string };
+  setItem(CACHED_BOOKS_KEY, cachedBooks);
+};
+
+export const clearExpiredCache = (maxAgeHours: number = 24 * 7): void => {
+  const cachedBooks = getItem<Record<string, Book & { cached_at: string }>>(CACHED_BOOKS_KEY, {});
+  const now = new Date().getTime();
+  const maxAge = maxAgeHours * 60 * 60 * 1000;
+  
+  Object.keys(cachedBooks).forEach(key => {
+    const book = cachedBooks[key];
+    if (book.cached_at && (now - new Date(book.cached_at).getTime()) > maxAge) {
+      delete cachedBooks[key];
+    }
+  });
+  
+  setItem(CACHED_BOOKS_KEY, cachedBooks);
+};
+
 export const saveBook = (book: Book): void => {
   const books = getBooks();
   const existingBookIndex = books.findIndex(b => b.key === book.key);
@@ -37,11 +67,19 @@ export const saveBook = (book: Book): void => {
   }
   
   setItem(BOOKS_KEY, books);
+  
+  // Cache book details for offline access
+  cacheBookDetails(book);
 };
 
 export const removeBook = (bookKey: string): void => {
   const books = getBooks().filter(book => book.key !== bookKey);
   setItem(BOOKS_KEY, books);
+  
+  // Remove from cache as well
+  const cachedBooks = getItem<Record<string, Book & { cached_at: string }>>(CACHED_BOOKS_KEY, {});
+  delete cachedBooks[bookKey];
+  setItem(CACHED_BOOKS_KEY, cachedBooks);
 };
 
 // Current book

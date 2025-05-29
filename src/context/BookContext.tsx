@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Book, ReadingSession, ReadingNote } from '../types';
-import { getBooks, saveBook, getCurrentBook, setCurrentBook, getSessionsByBook, saveSession, getNotesByBook, saveNote, removeNote, removeBook as removeBookFromStorage } from '../services/storage';
+import { getBooks, saveBook, getCurrentBook, setCurrentBook, getSessionsByBook, saveSession, getNotesByBook, saveNote, removeNote, removeBook as removeBookFromStorage, getCachedBookDetails } from '../services/storage';
 
 interface BookContextProps {
   books: Book[];
@@ -38,7 +38,15 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
 
   // Initialize from local storage
   useEffect(() => {
-    setBooks(getBooks());
+    const loadedBooks = getBooks();
+    
+    // Enhance books with cached details for offline support
+    const enhancedBooks = loadedBooks.map(book => {
+      const cachedDetails = getCachedBookDetails(book.key);
+      return cachedDetails ? { ...book, ...cachedDetails } : book;
+    });
+    
+    setBooks(enhancedBooks);
     setCurrentBookState(getCurrentBook());
   }, []);
 
@@ -68,7 +76,7 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
   };
 
   const removeBook = (bookKey: string) => {
-    // Remove from storage
+    // Remove from storage (this also removes from cache)
     removeBookFromStorage(bookKey);
     
     // Update state

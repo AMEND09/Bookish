@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useBooks } from '../../context/BookContext';
 import { BookOpen } from 'lucide-react';
 
@@ -7,9 +7,24 @@ interface CurrentlyReadingProps {
 }
 
 const CurrentlyReading: React.FC<CurrentlyReadingProps> = ({ onContinueReading }) => {
-  const { currentBook, sessions } = useBooks();
+  const { currentBook, sessions, setActiveBook } = useBooks();
+  const [isBookInLibrary, setIsBookInLibrary] = useState(true);
   
-  if (!currentBook) {
+  // Check if current book is still in library
+  useEffect(() => {
+    if (currentBook) {
+      const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
+      const bookExists = savedBooks.some((book: any) => book.key === currentBook.key);
+      setIsBookInLibrary(bookExists);
+      
+      // If book was removed from library, clear it as current book
+      if (!bookExists) {
+        setActiveBook(null);
+      }
+    }
+  }, [currentBook, setActiveBook]);
+  
+  if (!currentBook || !isBookInLibrary) {
     return (
       <div className="p-4 bg-[#F0EDE8] rounded-xl shadow-sm">
         <div className="flex items-center justify-center p-6 border-2 border-dashed border-[#8B7355] rounded-lg">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Timer, PenLine, PlayCircle, Plus, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { getBookDetails } from '../services/api';
+import { getCachedBookDetails, cacheBookDetails } from '../services/storage';
 import { useBooks } from '../context/BookContext';
 import { usePet } from '../context/PetContext';
 import ConfirmationModal from '../components/ui/ConfirmationModal';
@@ -45,22 +46,44 @@ const BookDetailsPage: React.FC = () => {
       const isAlreadyInLibrary = savedBooks.some((b: any) => b.key === currentBook.key);
       setIsInLibrary(isAlreadyInLibrary);
 
-      // Fetch additional book details if needed
+      // Try to get cached details first for offline support
+      const cachedDetails = getCachedBookDetails(currentBook.key);
+      if (cachedDetails && cachedDetails.description && !currentBook.description) {
+        setCurrentBook((prev: any) => ({
+          ...prev,
+          description: cachedDetails.description,
+          number_of_pages_median: cachedDetails.number_of_pages_median || prev.number_of_pages_median
+        }));
+        return;
+      }
+
+      // Fetch additional book details if needed and not cached
       if (!currentBook.description) {
         setLoading(true);
         
         getBookDetails(currentBook.key)
           .then(details => {
             if (details) {
-              setCurrentBook((prev: any) => ({
-                ...prev,
+              const updatedBook = {
+                ...currentBook,
                 description: details.description,
-                number_of_pages_median: details.number_of_pages_median || prev.number_of_pages_median
-              }));
+                number_of_pages_median: details.number_of_pages_median || currentBook.number_of_pages_median
+              };
+              setCurrentBook(updatedBook);
+              
+              // Cache the enhanced book details
+              cacheBookDetails(updatedBook);
             }
           })
           .catch(error => {
             console.error('Error fetching book details:', error);
+            // If offline and we have cached data, use it
+            if (cachedDetails) {
+              setCurrentBook((prev: any) => ({
+                ...prev,
+                ...cachedDetails
+              }));
+            }
           })
           .finally(() => {
             setLoading(false);
@@ -97,6 +120,9 @@ const BookDetailsPage: React.FC = () => {
       
       savedBooks.push(bookWithCategory);
       localStorage.setItem('bookish_books', JSON.stringify(savedBooks));
+      
+      // Cache book details for offline access
+      cacheBookDetails(bookWithCategory);
       
       // Also save to old storage for backward compatibility
       const oldSavedBooks = JSON.parse(localStorage.getItem('myBooks') || '[]');

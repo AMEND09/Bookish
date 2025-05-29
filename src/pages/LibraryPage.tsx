@@ -58,6 +58,17 @@ const LibraryPage: React.FC = () => {
         const oldUpdatedBooks = oldSavedBooks.filter((book: any) => book.key !== bookKey);
         localStorage.setItem('myBooks', JSON.stringify(oldUpdatedBooks));
         
+        // Remove from cached book details
+        const cachedBooks = JSON.parse(localStorage.getItem('bookish_cached_books') || '{}');
+        delete cachedBooks[bookKey];
+        localStorage.setItem('bookish_cached_books', JSON.stringify(cachedBooks));
+        
+        // Clear as active book if this was the currently reading book
+        const currentBook = JSON.parse(localStorage.getItem('bookish_current_book') || 'null');
+        if (currentBook && currentBook.key === bookKey) {
+          localStorage.removeItem('bookish_current_book');
+        }
+        
         // Update local state instead of page refresh
         setLocalBooks(updatedBooks);
       },
