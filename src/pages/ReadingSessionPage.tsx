@@ -30,10 +30,34 @@ const ReadingSessionPage: React.FC = () => {
       startPage: startPage 
     });
   
-  // Initialize start page from latest session
+  // Initialize start page from latest session or active timer
   useEffect(() => {
     if (currentBook) {
-      // Start from the last read page if available
+      // Check if there's an active timer first
+      const activeTimer = localStorage.getItem('bookish_active_timer');
+      if (activeTimer) {
+        try {
+          const parsed = JSON.parse(activeTimer);
+          if (parsed.bookId === currentBook.key) {
+            setStartPage(parsed.startPage);
+            setEndPage(parsed.startPage);
+            
+            // Show notification that timer was restored
+            if (parsed.timerState.isActive || parsed.timerState.totalElapsed > 0) {
+              modal.showAlert(
+                'Timer Restored',
+                'Your reading session has been restored. You can continue where you left off.',
+                'success'
+              );
+            }
+            return;
+          }
+        } catch (error) {
+          console.error('Error parsing active timer:', error);
+        }
+      }
+
+      // If no active timer, start from the last read page
       const latestSessions = JSON.parse(localStorage.getItem('bookish_reading_sessions') || '[]');
       const bookSessions = latestSessions.filter((s: any) => s.bookId === currentBook.key);
       
@@ -48,7 +72,20 @@ const ReadingSessionPage: React.FC = () => {
         setEndPage(lastPage);
       }
     }
-  }, [currentBook]);
+  }, [currentBook, modal]);
+
+  // Warn user when leaving page with active timer
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isActive) {
+        e.preventDefault();
+        e.returnValue = 'You have an active reading session. Are you sure you want to leave?';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isActive]);
   
   if (!currentBook) {
     navigate('/');
@@ -96,7 +133,10 @@ const ReadingSessionPage: React.FC = () => {
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
     
-    return `${hrs > 0 ? `${hrs}:` : ''}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    if (hrs > 0) {
+      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
   // Get page limits for input validation
@@ -179,17 +219,23 @@ const ReadingSessionPage: React.FC = () => {
       <header className="p-4 bg-[#F0EDE8] flex items-center gap-3 shadow-sm">
         <button
           onClick={() => {
-            if (isActive) {
+            if (isActive || elapsedTime > 0) {
               modal.showConfirm(
-                'Discard Session',
-                'Do you want to discard this reading session?',
+                'Leave Reading Session',
+                isActive 
+                  ? 'Your timer is still running. The session will continue in the background if you leave.'
+                  : 'You have an unsaved reading session. Do you want to save it or discard it?',
                 () => {
-                  resetTimer();
-                  navigate(-1);
+                  if (!isActive && elapsedTime > 0) {
+                    // Save the session before leaving
+                    handleFinishSession();
+                  } else {
+                    navigate(-1);
+                  }
                 },
                 {
-                  confirmText: 'Discard',
-                  cancelText: 'Continue Reading'
+                  confirmText: isActive ? 'Leave (Keep Timer)' : 'Save & Leave',
+                  cancelText: 'Stay'
                 }
               );
             } else {
@@ -202,6 +248,12 @@ const ReadingSessionPage: React.FC = () => {
         </button>
         
         <h1 className="font-serif text-lg font-medium text-[#3A3A3A]">Reading Session</h1>
+        
+        {isActive && (
+          <div className="ml-auto">
+            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+          </div>
+        )}
       </header>
       
       <main className="p-4">
@@ -342,7 +394,9 @@ const ReadingSessionPage: React.FC = () => {
           onClick={() => {
             modal.showConfirm(
               'Cancel Session',
-              'Are you sure you want to cancel this session? All progress will be lost.',
+              isActive 
+                ? 'This will stop your timer and discard the session. Are you sure?'
+                : 'Are you sure you want to cancel this session? All progress will be lost.',
               () => {
                 resetTimer();
                 navigate(-1);
