@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Pause, Play, Check, X } from 'lucide-react';
+import { ArrowLeft, Pause, Play, Check, X, Trophy } from 'lucide-react';
 import { useBooks } from '../context/BookContext';
 import { usePet } from '../context/PetContext';
 import { useReadingTimer } from '../hooks/useReadingTimer';
@@ -21,6 +21,7 @@ const ReadingSessionPage: React.FC = () => {
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [noteContent, setNoteContent] = useState('');
   const [noteChapter, setNoteChapter] = useState('');
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
   
   // Initialize timer
   const { isActive, elapsedTime, startTimer, pauseTimer, stopTimer, resetTimer } = 
@@ -98,6 +99,81 @@ const ReadingSessionPage: React.FC = () => {
     return `${hrs > 0 ? `${hrs}:` : ''}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
+  // Get page limits for input validation
+  const maxPages = currentBook.number_of_pages_median || 9999;
+  const hasKnownPageCount = currentBook.number_of_pages_median && currentBook.number_of_pages_median > 0;
+  
+  // Check if user has reached the last page
+  const hasReachedLastPage = () => {
+    const totalPages = currentBook?.number_of_pages_median || 0;
+    return totalPages > 0 && endPage >= totalPages;
+  };
+
+  // Handle end page change and check for completion
+  const handleEndPageChange = (newEndPage: number) => {
+    setEndPage(newEndPage);
+    
+    // Check if user reached the last page
+    if (currentBook?.number_of_pages_median && newEndPage >= currentBook.number_of_pages_median) {
+      setShowCompletionModal(true);
+    }
+  };
+
+  const handleMarkAsFinished = () => {
+    // Complete the reading session first
+    const session = stopTimer(endPage);
+    addSession(session);
+    
+    // Feed the pet based on reading time
+    if (session.duration) {
+      updatePetFromReading(session.duration);
+    }
+    
+    // Save note if exists
+    if (noteContent.trim()) {
+      const note: ReadingNote = {
+        id: uuidv4(),
+        bookId: currentBook.key,
+        page: endPage,
+        chapter: noteChapter.trim() || undefined,
+        content: noteContent.trim(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      addNote(note);
+    }
+    
+    // Mark book as completed
+    const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
+    const updatedBooks = savedBooks.map((book: any) => 
+      book.key === currentBook.key ? { ...book, category: 'completed', completedAt: new Date().toISOString() } : book
+    );
+    localStorage.setItem('bookish_books', JSON.stringify(updatedBooks));
+    
+    // Also update old storage for backward compatibility
+    const oldSavedBooks = JSON.parse(localStorage.getItem('myBooks') || '[]');
+    const oldUpdatedBooks = oldSavedBooks.map((book: any) => 
+      book.key === currentBook.key ? { ...book, category: 'completed', completedAt: new Date().toISOString() } : book
+    );
+    localStorage.setItem('myBooks', JSON.stringify(oldUpdatedBooks));
+    
+    // Clear as active book
+    localStorage.removeItem('bookish_current_book');
+    
+    // Reward the pet for completing a book
+    updatePetFromReading(session.duration || 0, true); // Pass true for book completion
+    
+    modal.showAlert(
+      'Congratulations!',
+      '🎉 You\'ve completed the book and your pet gained bonus experience!',
+      'success'
+    );
+    
+    setTimeout(() => {
+      navigate('/library');
+    }, 2000);
+  };
+
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#F7F5F3] pb-20">
       <header className="p-4 bg-[#F0EDE8] flex items-center gap-3 shadow-sm">
@@ -180,7 +256,7 @@ const ReadingSessionPage: React.FC = () => {
                   value={startPage}
                   onChange={(e) => setStartPage(parseInt(e.target.value) || 1)}
                   min="1"
-                  max={currentBook.number_of_pages_median || 1000}
+                  max={maxPages}
                   className="w-full p-2 border border-[#E5E5E5] rounded-md text-[#3A3A3A]"
                   disabled={isActive || elapsedTime > 0}
                 />
@@ -191,13 +267,39 @@ const ReadingSessionPage: React.FC = () => {
                 <input
                   type="number"
                   value={endPage}
-                  onChange={(e) => setEndPage(parseInt(e.target.value) || 1)}
+                  onChange={(e) => handleEndPageChange(parseInt(e.target.value) || 1)}
                   min={startPage}
-                  max={currentBook.number_of_pages_median || 1000}
+                  max={maxPages}
                   className="w-full p-2 border border-[#E5E5E5] rounded-md text-[#3A3A3A]"
                 />
               </div>
             </div>
+            
+            {hasReachedLastPage() && (
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Trophy className="w-5 h-5 text-green-600" />
+                  <span className="font-medium text-green-800">Congratulations!</span>
+                </div>
+                <p className="text-sm text-green-700 mb-3">
+                  You've reached the last page! Would you like to mark this book as completed?
+                </p>
+                <button
+                  onClick={handleMarkAsFinished}
+                  className="w-full py-2 px-4 bg-green-600 text-white rounded-lg font-medium text-sm hover:bg-green-700 transition-colors"
+                >
+                  Mark as Finished
+                </button>
+              </div>
+            )}
+            
+            {!hasKnownPageCount && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  📘 Page count unavailable for this book. You can still track your reading progress by entering the pages you read.
+                </p>
+              </div>
+            )}
             
             <button
               onClick={() => setShowNoteForm(!showNoteForm)}
@@ -257,15 +359,62 @@ const ReadingSessionPage: React.FC = () => {
           Cancel
         </button>
         
-        <button
-          onClick={handleFinishSession}
-          className="flex-1 py-3 px-4 bg-[#D2691E] text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2"
-          disabled={!elapsedTime}
-        >
-          <Check className="w-5 h-5" />
-          Finish
-        </button>
+        {hasReachedLastPage() ? (
+          <button
+            onClick={handleMarkAsFinished}
+            className="flex-1 py-3 px-4 bg-green-600 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+          >
+            <Trophy className="w-5 h-5" />
+            Mark as Finished
+          </button>
+        ) : (
+          <button
+            onClick={handleFinishSession}
+            className="flex-1 py-3 px-4 bg-[#D2691E] text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+            disabled={!elapsedTime}
+          >
+            <Check className="w-5 h-5" />
+            Finish Session
+          </button>
+        )}
       </div>
+
+      {/* Book Completion Modal */}
+      {showCompletionModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trophy className="w-8 h-8 text-green-600" />
+              </div>
+              
+              <h3 className="font-serif text-lg font-medium text-[#3A3A3A] mb-2">
+                Congratulations!
+              </h3>
+              
+              <p className="text-sm text-[#8B7355] mb-6">
+                You've reached the last page of "{currentBook.title}". Would you like to mark it as completed?
+              </p>
+              
+              <div className="space-y-3">
+                <button
+                  onClick={handleMarkAsFinished}
+                  className="w-full py-3 px-4 bg-green-600 text-white rounded-lg font-medium text-sm hover:bg-green-700 transition-colors"
+                >
+                  Yes, Mark as Completed
+                </button>
+                
+                <button
+                  onClick={() => setShowCompletionModal(false)}
+                  className="w-full py-2 px-4 bg-white border border-[#E5E5E5] text-[#8B7355] rounded-lg font-medium text-sm hover:bg-[#F7F5F3] transition-colors"
+                >
+                  Continue Reading
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Modal */}
       <ConfirmationModal

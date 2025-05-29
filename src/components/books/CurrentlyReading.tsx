@@ -32,6 +32,10 @@ const CurrentlyReading: React.FC<CurrentlyReadingProps> = ({ onContinueReading }
   const totalPages = currentBook.number_of_pages_median || 0;
   const progressPercent = totalPages > 0 ? Math.min(Math.round((currentPage / totalPages) * 100), 100) : 0;
 
+  // Determine if we should show progress or just current page
+  const showProgress = totalPages > 0;
+  const hasValidProgress = showProgress && progressPercent > 0;
+
   return (
     <div className="p-4 bg-[#F0EDE8] rounded-xl shadow-sm">
       <h2 className="font-serif text-lg font-medium text-[#3A3A3A] mb-3">Currently Reading</h2>
@@ -58,7 +62,7 @@ const CurrentlyReading: React.FC<CurrentlyReadingProps> = ({ onContinueReading }
             <p className="text-sm text-[#8B7355] mb-2">by {currentBook.author_name[0]}</p>
           )}
           
-          {totalPages > 0 && (
+          {hasValidProgress ? (
             <>
               <div className="flex items-center gap-2 text-xs text-[#8B7355] mb-2">
                 <span>{progressPercent}%</span>
@@ -74,11 +78,16 @@ const CurrentlyReading: React.FC<CurrentlyReadingProps> = ({ onContinueReading }
                 Page {currentPage} of {totalPages}
               </div>
             </>
-          )}
-          
-          {totalPages === 0 && (
+          ) : showProgress ? (
             <div className="text-xs text-[#8B7355] mb-4">
-              Page count unavailable
+              Page {currentPage} of {totalPages}
+            </div>
+          ) : (
+            <div className="text-xs text-[#8B7355] mb-4">
+              Currently on page {currentPage}
+              <div className="text-xs text-[#8B7355] opacity-75 mt-1">
+                Page count unavailable
+              </div>
             </div>
           )}
           

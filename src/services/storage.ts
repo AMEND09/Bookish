@@ -1,4 +1,5 @@
 import { Book, ReadingSession, ReadingNote, VirtualPet, ReadingStats, UserSettings, ReadingStreak } from '../types';
+import { estimatePageCount } from './api';
 
 // Local storage keys
 const BOOKS_KEY = 'bookish_books';
@@ -188,12 +189,13 @@ export const updateStats = (): void => {
     return sessionDate >= startOfWeek ? total + (session.duration || 0) : total;
   }, 0);
   
-  // Estimate total pages read
+  // Estimate total pages read - handle missing page counts
   const totalPagesRead = sessions.reduce((total, session) => {
-    return total + ((session.endPage || 0) - (session.startPage || 0));
+    const pagesInSession = (session.endPage || 0) - (session.startPage || 0);
+    return total + Math.max(0, pagesInSession);
   }, 0);
   
-  // Count finished books this year
+  // Count finished books this year - improved logic
   const startOfYear = new Date(new Date().getFullYear(), 0, 1);
   const finishedBookIds = new Set();
   
@@ -201,9 +203,27 @@ export const updateStats = (): void => {
     const sessionDate = new Date(session.startTime);
     if (sessionDate >= startOfYear && session.endPage) {
       const book = books.find(b => b.key === session.bookId);
-      if (book && book.number_of_pages_median && session.endPage >= book.number_of_pages_median) {
-        finishedBookIds.add(session.bookId);
+      if (book) {
+        const bookPageCount = book.number_of_pages_median;
+        
+        if (bookPageCount && session.endPage >= bookPageCount) {
+          finishedBookIds.add(session.bookId);
+        } else if (!bookPageCount) {
+          // For books without page count, consider 90% of estimated pages as complete
+          const estimatedPages = estimatePageCount(book);
+          if (session.endPage >= estimatedPages * 0.9) {
+            finishedBookIds.add(session.bookId);
+          }
+        }
       }
+    }
+  });
+  
+  // Also check for books explicitly marked as completed
+  const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
+  savedBooks.forEach((book: any) => {
+    if (book.category === 'completed') {
+      finishedBookIds.add(book.key);
     }
   });
   

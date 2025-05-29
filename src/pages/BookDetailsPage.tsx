@@ -190,12 +190,17 @@ const BookDetailsPage: React.FC = () => {
   const bookInLibrary = savedBooks.find((b: any) => b.key === currentBook.key);
   const isCompleted = bookInLibrary?.category === 'completed';
 
+  const handleBackNavigation = () => {
+    // Simple back navigation
+    navigate(-1);
+  };
+
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#F7F5F3]">
       {/* Header with back button */}
       <div className="p-4 bg-[#F7F5F3]">
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleBackNavigation}
           className="w-8 h-8 flex items-center justify-center bg-[#F0EDE8] rounded-full hover:bg-[#E8E3DD] transition-colors"
         >
           <ArrowLeft className="w-5 h-5 text-[#8B7355]" />

@@ -34,7 +34,7 @@ interface PetContextType {
   feedPet: () => void;
   playWithPet: () => void;
   petSleep: () => void;
-  updatePetFromReading: (minutes: number) => void;
+  updatePetFromReading: (minutes: number, isBookCompletion?: boolean) => void;
   updatePetFromBookCompletion: () => void;
   getPetMood: () => string;
   getPetEvolutionRequirement: () => { current: number; required: number; stage: string };
@@ -294,34 +294,36 @@ export const PetProvider: React.FC<PetProviderProps> = ({ children }) => {
     });
   };
 
-  const updatePetFromReading = (minutes: number) => {
-    setPet(prevPet => {
-      const expGain = Math.floor(minutes / 5) * 2; // 2 exp per 5 minutes
-      const happinessGain = Math.floor(minutes / 10); // happiness per 10 minutes
-      const pointsGain = Math.floor(minutes / 10); // 1 point per 10 minutes of reading
-      const newExp = prevPet.experience + expGain;
-      const newHappiness = Math.min(100, prevPet.happiness + happinessGain);
-      const newTotalReadingTime = prevPet.totalReadingTime + minutes;
-      const { newLevel, newExpToNext } = checkForLevelUp(newExp, prevPet.level);
-      
-      return {
-        ...prevPet,
-        experience: newExp,
-        level: newLevel,
-        experienceToNext: newExpToNext,
-        happiness: newHappiness,
-        points: prevPet.points + pointsGain,
-        totalReadingTime: newTotalReadingTime,
-        evolutionStage: getEvolutionStage(newLevel),
-        mood: getMoodFromStats(newHappiness, prevPet.hunger, prevPet.energy)
-      };
-    });
+  const updatePetFromReading = (minutes: number, isBookCompletion: boolean = false) => {
+    const baseExperience = Math.floor(minutes / 5); // 1 XP per 5 minutes
+    const bookCompletionBonus = isBookCompletion ? 50 : 0; // Bonus XP for completing a book
+    const totalExperience = baseExperience + bookCompletionBonus;
+    
+    if (totalExperience > 0) {
+      setPet(prevPet => {
+        const newExp = prevPet.experience + totalExperience;
+        const newHappiness = Math.min(100, prevPet.happiness + Math.floor(minutes / 10));
+        const newTotalReadingTime = prevPet.totalReadingTime + minutes;
+        const { newLevel, newExpToNext } = checkForLevelUp(newExp, prevPet.level);
+        
+        return {
+          ...prevPet,
+          experience: newExp,
+          level: newLevel,
+          experienceToNext: newExpToNext,
+          happiness: newHappiness,
+          totalReadingTime: newTotalReadingTime,
+          evolutionStage: getEvolutionStage(newLevel),
+          mood: getMoodFromStats(newHappiness, prevPet.hunger, prevPet.energy)
+        };
+      });
 
-    setPetStats(prevStats => ({
-      ...prevStats,
-      readingTimeToday: prevStats.readingTimeToday + minutes,
-      lastActiveDate: new Date().toISOString()
-    }));
+      setPetStats(prevStats => ({
+        ...prevStats,
+        readingTimeToday: prevStats.readingTimeToday + minutes,
+        lastActiveDate: new Date().toISOString()
+      }));
+    }
   };
 
   const updatePetFromBookCompletion = () => {

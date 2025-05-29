@@ -200,49 +200,14 @@ const SearchPage: React.FC = () => {
     }
   };
   
-  const handleSelectBook = (book: Book) => {
-    navigate(`/book?book=${book.key}`, { state: { bookData: book } });
+  const handleBookSelect = (book: Book) => {
+    // Navigate to book details using query parameters
+    navigate(`/book?book=${encodeURIComponent(book.key)}`, {
+      state: {
+        bookData: book
+      }
+    });
   };
-  
-  const renderBookCard = (book: Book) => (
-    <button
-      key={book.key}
-      onClick={() => handleSelectBook(book)}
-      className="w-full flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow text-left"
-    >
-      <div className="w-12 h-16 bg-[#F0EDE8] rounded flex-shrink-0 overflow-hidden">
-        {book.cover_i ? (
-          <img
-            src={`https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`}
-            alt={book.title}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              target.nextElementSibling?.classList.remove('hidden');
-            }}
-          />
-        ) : null}
-        <div className={`w-full h-full flex items-center justify-center ${book.cover_i ? 'hidden' : ''}`}>
-          <BookOpen className="w-6 h-6 text-[#8B7355]" />
-        </div>
-      </div>
-      
-      <div className="flex-1 min-w-0">
-        <h3 className="font-serif font-medium text-[#3A3A3A] text-sm leading-tight mb-1 truncate">
-          {book.title}
-        </h3>
-        {book.author_name && (
-          <p className="text-xs text-[#8B7355] mb-2 truncate">
-            by {book.author_name[0]}
-          </p>
-        )}
-        {book.first_publish_year && (
-          <p className="text-xs text-[#8B7355]">{book.first_publish_year}</p>
-        )}
-      </div>
-    </button>
-  );
   
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#F7F5F3] pb-6">
@@ -385,7 +350,45 @@ const SearchPage: React.FC = () => {
             </h2>
             
             <div className="space-y-3">
-              {results.map((book) => renderBookCard(book))}
+              {results.map((book) => (
+                <div
+                  key={book.key}
+                  onClick={() => handleBookSelect(book)}
+                  className="flex gap-4 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                >
+                  <div className="w-12 h-16 bg-[#F0EDE8] rounded flex-shrink-0 overflow-hidden">
+                    {book.cover_i ? (
+                      <img
+                        src={`https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`}
+                        alt={book.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-full h-full flex items-center justify-center ${book.cover_i ? 'hidden' : ''}`}>
+                      <BookOpen className="w-6 h-6 text-[#8B7355]" />
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-serif font-medium text-[#3A3A3A] text-sm leading-tight mb-1 truncate">
+                      {book.title}
+                    </h3>
+                    {book.author_name && (
+                      <p className="text-xs text-[#8B7355] mb-2 truncate">
+                        by {book.author_name[0]}
+                      </p>
+                    )}
+                    {book.first_publish_year && (
+                      <p className="text-xs text-[#8B7355]">{book.first_publish_year}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ) : (
