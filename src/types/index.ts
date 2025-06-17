@@ -75,6 +75,8 @@ export interface User {
     bio?: string;
     favoriteGenres?: string[];
     readingGoal?: number; // books per year
+    joinedDate?: string;
+    originalUsername?: string;
   };
 }
 

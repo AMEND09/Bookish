@@ -89,8 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const authCheck = gunService.recallUser();
         
         const result = await Promise.race([authCheck, authTimeout]) as any;
-        
-        if (result && result.success && result.user) {
+          if (result && result.success && result.user) {
           // Load user profile data with timeout
           const profileTimeout = new Promise<{ success: boolean }>((_, reject) =>
             setTimeout(() => reject(new Error('Profile load timeout')), 3000)
@@ -104,6 +103,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             const user: User = {
               ...result.user,
+              // Use the stored username from profile if available, otherwise use the recalled username
+              username: (profileResult?.success && profileResult?.profile?.originalUsername) 
+                ? profileResult.profile.originalUsername 
+                : result.user.username || 'Unknown User',
               profile: (profileResult && profileResult.success) ? profileResult.profile : undefined,
             };
             dispatch({ type: 'AUTH_SUCCESS', payload: user });
@@ -111,6 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // If profile loading fails, still authenticate the user without profile
             const user: User = {
               ...result.user,
+              username: result.user.username || 'Unknown User',
               profile: undefined,
             };
             dispatch({ type: 'AUTH_SUCCESS', payload: user });
@@ -126,7 +130,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     checkAuth();
   }, []);
-
   const signIn = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     dispatch({ type: 'AUTH_START' });
     
@@ -138,6 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const profileResult = await gunService.getProfile();
         const user: User = {
           ...result.user,
+          username: username, // Ensure we keep the original username
           profile: profileResult.success ? profileResult.profile : undefined,
         };
         dispatch({ type: 'AUTH_SUCCESS', payload: user });
@@ -204,18 +208,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     dispatch({ type: 'AUTH_SUCCESS', payload: guestUser });
   };
-
   const updateProfile = async (profileData: any): Promise<{ success: boolean; error?: string }> => {
+    console.log('AuthContext: updateProfile called with:', profileData);
     try {
       const result = await gunService.updateProfile(profileData);
+      console.log('AuthContext: gunService.updateProfile result:', result);
       
       if (result.success) {
+        console.log('AuthContext: Updating user state with profile:', profileData);
         dispatch({ type: 'UPDATE_USER', payload: { profile: profileData } });
         return { success: true };
       } else {
+        console.log('AuthContext: Profile update failed:', result.error);
         return { success: false, error: result.error };
       }
     } catch (error) {
+      console.error('AuthContext: Profile update error:', error);
       return { success: false, error: 'Failed to update profile' };
     }
   };

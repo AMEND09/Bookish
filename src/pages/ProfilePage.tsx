@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LocalStorageService } from '../services/localStorage';
 import Layout from '../components/Layout';
+import Toast from '../components/ui/Toast';
 
 interface UserProfile {
   displayName: string;
@@ -15,28 +16,40 @@ interface UserProfile {
 }
 
 const ProfilePage: React.FC = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile>({
     displayName: '',
     bio: '',
     favoriteGenres: [],
     readingGoal: 12
-  });
-  const [isEditing, setIsEditing] = useState(false);
+  });  const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [newGenre, setNewGenre] = useState('');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   const isGuest = user?.id?.startsWith('guest-');
-
   useEffect(() => {
     if (user) {
       loadProfile();
     }
-  }, [user]);  const loadProfile = async () => {
+  }, [user]);  // Also update local profile state when user profile changes in AuthContext
+  useEffect(() => {
+    if (user?.profile && !isGuest) {
+      setProfile({
+        displayName: user.profile.displayName || '',
+        bio: user.profile.bio || '',
+        favoriteGenres: user.profile.favoriteGenres || [],
+        readingGoal: user.profile.readingGoal || 12,
+        joinedDate: user.profile.joinedDate || user.createdAt
+      });
+    }
+  }, [user?.profile, isGuest]);  const loadProfile = async () => {
+    console.log('ProfilePage: Loading profile for user:', user?.id, 'isGuest:', isGuest);
     try {
       if (isGuest) {        // For guest users, try to load from localStorage using the service
         const savedProfile = LocalStorageService.getGuestProfile() as any;
+        console.log('ProfilePage: Loaded guest profile from localStorage:', savedProfile);
         if (savedProfile) {
           setProfile({
             displayName: savedProfile.displayName || 'Guest User',
@@ -50,6 +63,7 @@ const ProfilePage: React.FC = () => {
         
         // Fallback to user object if no localStorage data
         if (user?.profile) {
+          console.log('ProfilePage: Using fallback guest profile from user object');
           setProfile({
             displayName: user.profile.displayName || 'Guest User',
             bio: user.profile.bio || 'Browsing as a guest',
@@ -61,15 +75,22 @@ const ProfilePage: React.FC = () => {
         return;
       }
 
+      console.log('ProfilePage: Loading profile from Gun service');
       const result = await gunService.getProfile();
+      console.log('ProfilePage: Gun service profile result:', result);
+      
       if (result.success && result.profile) {
-        setProfile({
+        const loadedProfile = {
           displayName: result.profile.displayName || '',
           bio: result.profile.bio || '',
           favoriteGenres: result.profile.favoriteGenres || [],
           readingGoal: result.profile.readingGoal || 12,
-          joinedDate: result.profile.joinedDate
-        });
+          joinedDate: result.profile.joinedDate || result.profile.lastUpdated
+        };
+        console.log('ProfilePage: Setting profile to:', loadedProfile);
+        setProfile(loadedProfile);
+      } else {
+        console.log('ProfilePage: No profile found or error loading profile');
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -77,19 +98,36 @@ const ProfilePage: React.FC = () => {
   };const saveProfile = async () => {
     if (!user) return;
     
+    console.log('ProfilePage: Saving profile:', profile);
     setIsSaving(true);
     try {      if (isGuest) {
         // For guest users, save to localStorage using the service
         LocalStorageService.setGuestProfile(profile);
         setIsEditing(false);
         console.log('Guest profile saved to localStorage:', profile);
+        setToast({ message: 'Profile saved successfully!', type: 'success' });
         return;
       }
 
-      await gunService.updateProfile(profile);
-      setIsEditing(false);
+      // Save profile for authenticated users - use AuthContext updateProfile method
+      console.log('ProfilePage: Calling updateProfile with:', profile);
+      const result = await updateProfile(profile);
+      console.log('ProfilePage: updateProfile result:', result);
+      
+      if (result.success) {
+        setIsEditing(false);
+        console.log('Profile saved successfully');
+        setToast({ message: 'Profile saved successfully!', type: 'success' });
+        // Reload the profile to ensure we have the latest data
+        console.log('ProfilePage: Reloading profile after save');
+        await loadProfile();
+      } else {
+        console.error('Error saving profile:', result.error);
+        setToast({ message: `Failed to save profile: ${result.error || 'Unknown error'}`, type: 'error' });
+      }
     } catch (error) {
       console.error('Error saving profile:', error);
+      setToast({ message: 'Failed to save profile. Please try again.', type: 'error' });
     } finally {
       setIsSaving(false);
     }
@@ -161,10 +199,9 @@ const ProfilePage: React.FC = () => {
                   <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                   </svg>
-                </div>
-                <div className="text-center md:text-left flex-1">
+                </div>                <div className="text-center md:text-left flex-1">
                   <h1 className="text-3xl font-bold mb-2">
-                    {profile.displayName || user.username || 'Book Lover'}
+                    {profile.displayName || user?.username || 'Book Lover'}
                   </h1>
                   <p className="text-amber-100 text-lg">
                     {profile.bio || 'A passionate reader exploring new worlds through books'}
@@ -359,6 +396,15 @@ const ProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </Layout>
   );
 };
