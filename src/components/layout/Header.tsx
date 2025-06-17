@@ -2,6 +2,7 @@ import React from 'react';
 import { User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePet } from '../../context/PetContext';
+import { useAuth } from '../../context/AuthContext';
 
 interface HeaderProps {
   greeting: string;
@@ -10,6 +11,9 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ greeting }) => {
   const navigate = useNavigate();
   const { pet } = usePet();
+  const { user } = useAuth();
+  
+  const isGuest = user?.id?.startsWith('guest-');
   
   const getStatusEmoji = () => {
     const mood = pet.mood;
@@ -42,10 +46,16 @@ const Header: React.FC<HeaderProps> = ({ greeting }) => {
               <p className="text-xs font-medium text-[#3A3A3A]">{pet.name}</p>
               <p className="text-xs text-[#8B7355]">Lv.{pet.level}</p>
             </div>
-          </div>
-          
-          <button className="w-8 h-8 rounded-full bg-[#F0EDE8] flex items-center justify-center">
-            <User className="w-5 h-5 text-[#8B7355]" />
+          </div>          <button 
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+              isGuest 
+                ? 'bg-orange-100 hover:bg-orange-200' 
+                : 'bg-[#F0EDE8] hover:bg-[#E8E3DD]'
+            }`}
+            onClick={() => navigate('/profile')}
+            title={isGuest ? 'Guest User' : 'Profile'}
+          >
+            <User className={`w-5 h-5 ${isGuest ? 'text-orange-600' : 'text-[#8B7355]'}`} />
           </button>
         </div>
       </div>

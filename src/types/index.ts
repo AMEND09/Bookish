@@ -63,3 +63,24 @@ export interface UserSettings {
   theme: 'light' | 'dark';
   petName: string;
 }
+
+export interface User {
+  id: string;
+  username: string;
+  email?: string;
+  createdAt: string;
+  profile?: {
+    displayName?: string;
+    avatar?: string;
+    bio?: string;
+    favoriteGenres?: string[];
+    readingGoal?: number; // books per year
+  };
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  user: User | null;
+  isLoading: boolean;
+  error: string | null;
+}

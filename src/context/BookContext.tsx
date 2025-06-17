@@ -1,19 +1,20 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Book, ReadingSession, ReadingNote } from '../types';
-import { getBooks, saveBook, getCurrentBook, setCurrentBook, getSessionsByBook, saveSession, getNotesByBook, saveNote, removeNote, removeBook as removeBookFromStorage, getCachedBookDetails } from '../services/storage';
+import syncedStorage from '../services/syncedStorage';
+import { getCachedBookDetails } from '../services/storage';
 
 interface BookContextProps {
   books: Book[];
   currentBook: Book | null;
   sessions: ReadingSession[];
   notes: ReadingNote[];
-  addBook: (book: Book) => void;
-  removeBook: (bookKey: string) => void;
-  setActiveBook: (book: Book | null) => void;
-  addSession: (session: ReadingSession) => void;
-  addNote: (note: ReadingNote) => void;
-  updateNote: (note: ReadingNote) => void;
-  deleteNote: (noteId: string) => void;
+  addBook: (book: Book) => Promise<void>;
+  removeBook: (bookKey: string) => Promise<void>;
+  setActiveBook: (book: Book | null) => Promise<void>;
+  addSession: (session: ReadingSession) => Promise<void>;
+  addNote: (note: ReadingNote) => Promise<void>;
+  updateNote: (note: ReadingNote) => Promise<void>;
+  deleteNote: (noteId: string) => Promise<void>;
 }
 
 const BookContext = createContext<BookContextProps | undefined>(undefined);
@@ -36,92 +37,131 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
   const [sessions, setSessions] = useState<ReadingSession[]>([]);
   const [notes, setNotes] = useState<ReadingNote[]>([]);
 
-  // Initialize from local storage
+  // Initialize from synced storage
   useEffect(() => {
-    const loadedBooks = getBooks();
+    const loadData = async () => {
+      const loadedBooks = await syncedStorage.getBooks();
+      
+      // Enhance books with cached details for offline support
+      const enhancedBooks = loadedBooks.map((book: Book) => {
+        const cachedDetails = getCachedBookDetails(book.key);
+        return cachedDetails ? { ...book, ...cachedDetails } : book;
+      });
+      
+      setBooks(enhancedBooks);
+      
+      const currentBookData = await syncedStorage.getCurrentBook();
+      setCurrentBookState(currentBookData);
+    };
     
-    // Enhance books with cached details for offline support
-    const enhancedBooks = loadedBooks.map(book => {
-      const cachedDetails = getCachedBookDetails(book.key);
-      return cachedDetails ? { ...book, ...cachedDetails } : book;
-    });
-    
-    setBooks(enhancedBooks);
-    setCurrentBookState(getCurrentBook());
+    loadData();
   }, []);
 
   // Update sessions and notes when current book changes
   useEffect(() => {
-    if (currentBook) {
-      setSessions(getSessionsByBook(currentBook.key));
-      setNotes(getNotesByBook(currentBook.key));
-    } else {
-      setSessions([]);
-      setNotes([]);
-    }
+    const loadBookData = async () => {
+      if (currentBook) {
+        const allSessions = await syncedStorage.getReadingSessions();
+        const allNotes = await syncedStorage.getNotes();
+        
+        setSessions(allSessions.filter(session => session.bookId === currentBook.key));
+        setNotes(allNotes.filter(note => note.bookId === currentBook.key));
+      } else {
+        setSessions([]);
+        setNotes([]);
+      }
+    };
+    
+    loadBookData();
   }, [currentBook]);
 
-  const addBook = (book: Book) => {
-    saveBook(book);
-    setBooks(prevBooks => {
-      const existingIndex = prevBooks.findIndex(b => b.key === book.key);
-      if (existingIndex >= 0) {
-        const updatedBooks = [...prevBooks];
-        updatedBooks[existingIndex] = book;
-        return updatedBooks;
-      } else {
-        return [...prevBooks, book];
-      }
-    });
+  const addBook = async (book: Book) => {
+    const updatedBooks = [...books];
+    const existingIndex = updatedBooks.findIndex(b => b.key === book.key);
+    
+    if (existingIndex >= 0) {
+      updatedBooks[existingIndex] = book;
+    } else {
+      updatedBooks.push(book);
+    }
+    
+    setBooks(updatedBooks);
+    await syncedStorage.saveBooks(updatedBooks);
   };
 
-  const removeBook = (bookKey: string) => {
-    // Remove from storage (this also removes from cache)
-    removeBookFromStorage(bookKey);
+  const removeBook = async (bookKey: string) => {
+    // Remove book from books list
+    const updatedBooks = books.filter(book => book.key !== bookKey);
+    setBooks(updatedBooks);
+    await syncedStorage.saveBooks(updatedBooks);
     
-    // Update state
-    setBooks(prevBooks => prevBooks.filter(book => book.key !== bookKey));
+    // Remove related sessions and notes
+    const allSessions = await syncedStorage.getReadingSessions();
+    const allNotes = await syncedStorage.getNotes();
     
-    // If this was the current book, clear it
+    const updatedSessions = allSessions.filter(session => session.bookId !== bookKey);
+    const updatedNotes = allNotes.filter(note => note.bookId !== bookKey);
+    
+    await syncedStorage.saveReadingSessions(updatedSessions);
+    await syncedStorage.saveNotes(updatedNotes);
+    
+    // Clear current book if it's the one being removed
     if (currentBook && currentBook.key === bookKey) {
-      setActiveBook(null);
+      setCurrentBookState(null);
+      await syncedStorage.setCurrentBook(null);
     }
   };
 
-  const setActiveBook = (book: Book | null) => {
-    setCurrentBook(book);
+  const setActiveBook = async (book: Book | null) => {
     setCurrentBookState(book);
+    await syncedStorage.setCurrentBook(book);
   };
 
-  const addSession = (session: ReadingSession) => {
-    saveSession(session);
-    setSessions(prevSessions => {
-      const existingIndex = prevSessions.findIndex(s => s.id === session.id);
-      if (existingIndex >= 0) {
-        const updatedSessions = [...prevSessions];
-        updatedSessions[existingIndex] = session;
-        return updatedSessions;
-      } else {
-        return [...prevSessions, session];
-      }
-    });
+  const addSession = async (session: ReadingSession) => {
+    const allSessions = await syncedStorage.getReadingSessions();
+    const existingIndex = allSessions.findIndex(s => s.id === session.id);
+    
+    if (existingIndex >= 0) {
+      allSessions[existingIndex] = session;
+    } else {
+      allSessions.push(session);
+    }
+    
+    await syncedStorage.saveReadingSessions(allSessions);
+    
+    if (currentBook && session.bookId === currentBook.key) {
+      setSessions(allSessions.filter(s => s.bookId === currentBook.key));
+    }
   };
 
-  const addNote = (note: ReadingNote) => {
-    saveNote(note);
-    setNotes(prevNotes => [...prevNotes, note]);
+  const addNote = async (note: ReadingNote) => {
+    const allNotes = await syncedStorage.getNotes();
+    const updatedNotes = [...allNotes, note];
+    await syncedStorage.saveNotes(updatedNotes);
+    
+    if (currentBook && note.bookId === currentBook.key) {
+      setNotes(updatedNotes.filter(n => n.bookId === currentBook.key));
+    }
   };
 
-  const updateNote = (note: ReadingNote) => {
-    saveNote(note);
-    setNotes(prevNotes => 
-      prevNotes.map(n => n.id === note.id ? note : n)
-    );
+  const updateNote = async (note: ReadingNote) => {
+    const allNotes = await syncedStorage.getNotes();
+    const updatedNotes = allNotes.map(n => n.id === note.id ? note : n);
+    await syncedStorage.saveNotes(updatedNotes);
+    
+    if (currentBook && note.bookId === currentBook.key) {
+      setNotes(updatedNotes.filter(n => n.bookId === currentBook.key));
+    }
   };
 
-  const deleteNote = (noteId: string) => {
-    removeNote(noteId);
-    setNotes(prevNotes => prevNotes.filter(n => n.id !== noteId));
+  const deleteNote = async (noteId: string) => {
+    const allNotes = await syncedStorage.getNotes();
+    const updatedNotes = allNotes.filter(n => n.id !== noteId);
+    await syncedStorage.saveNotes(updatedNotes);
+    
+    if (currentBook) {
+      setNotes(updatedNotes.filter(n => n.bookId === currentBook.key));
+    }
   };
 
   return (

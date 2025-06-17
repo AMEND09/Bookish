@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { BookProvider } from './context/BookContext';
 import { PetProvider } from './context/PetContext';
+import { AuthProvider } from './context/AuthContext';
+import AuthGuard from './components/auth/AuthGuard';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -13,6 +15,7 @@ import StatsPage from './pages/StatsPage';
 import NotesPage from './pages/NotesPage';
 import AddNotePage from './pages/AddNotePage';
 import PetPage from './pages/PetPage';
+import ProfilePage from './pages/ProfilePage';
 
 const App: React.FC = () => {
   return (
@@ -25,24 +28,29 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      <PetProvider>
-        <BookProvider>
-          <Router basename="/Bookish">
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/welcome" element={<LandingPage />} />
-              <Route path="/search" element={<SearchPage />} />
-              <Route path="/library" element={<LibraryPage />} />
-              <Route path="/book" element={<BookDetailsPage />} />
-              <Route path="/reading" element={<ReadingSessionPage />} />
-              <Route path="/notes" element={<NotesPage />} />
-              <Route path="/notes/add" element={<AddNotePage />} />
-              <Route path="/pet" element={<PetPage />} />
-              <Route path="/stats" element={<StatsPage />} />
-            </Routes>
-          </Router>
-        </BookProvider>
-      </PetProvider>
+      <AuthProvider>
+        <PetProvider>
+          <BookProvider>
+            <Router basename="/Bookish">
+              <AuthGuard>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/welcome" element={<LandingPage />} />
+                  <Route path="/search" element={<SearchPage />} />
+                  <Route path="/library" element={<LibraryPage />} />
+                  <Route path="/book" element={<BookDetailsPage />} />
+                  <Route path="/reading" element={<ReadingSessionPage />} />
+                  <Route path="/notes" element={<NotesPage />} />
+                  <Route path="/notes/add" element={<AddNotePage />} />
+                  <Route path="/pet" element={<PetPage />} />
+                  <Route path="/stats" element={<StatsPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                </Routes>
+              </AuthGuard>
+            </Router>
+          </BookProvider>
+        </PetProvider>
+      </AuthProvider>
     </>
   );
 };
