@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { LocalStorageService } from '../services/localStorage';
 import Layout from '../components/Layout';
 import Toast from '../components/ui/Toast';
+import ThemeToggle from '../components/ui/ThemeToggle';
+import { useTheme } from '../context/ThemeContext';
 
 interface UserProfile {
   displayName: string;
@@ -17,6 +19,7 @@ interface UserProfile {
 
 const ProfilePage: React.FC = () => {
   const { user, signOut, updateProfile } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile>({
     displayName: '',
@@ -163,15 +166,23 @@ const ProfilePage: React.FC = () => {
         </div>
       </Layout>
     );
-  }
-  return (
+  }  return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 py-8">
+      <div 
+        className="min-h-screen py-8 transition-colors duration-200"
+        style={{ backgroundColor: theme.colors.background }}
+      >
         
         {/* Guest Mode Notification */}
-        {isGuest && (
-          <div className="max-w-4xl mx-auto px-4 mb-4">
-            <div className="bg-orange-100 border border-orange-200 text-orange-800 px-4 py-3 rounded-lg">
+        {isGuest && (          <div className="max-w-4xl mx-auto px-4 mb-4">
+            <div 
+              className="border px-4 py-3 rounded-lg"
+              style={{
+                backgroundColor: theme.colors.wantToRead,
+                borderColor: theme.colors.border,
+                color: theme.colors.wantToReadText
+              }}
+            >
               <div className="flex items-center">
                 <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -181,10 +192,17 @@ const ProfilePage: React.FC = () => {
             </div>
           </div>
         )}
-        
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">            {/* Header Section */}
-            <div className="bg-gradient-to-r from-amber-600 to-orange-600 px-8 py-12 text-white relative">
+          <div className="max-w-4xl mx-auto px-4">
+          <div 
+            className="rounded-2xl shadow-xl overflow-hidden transition-colors duration-200" 
+            style={{ backgroundColor: theme.colors.surface }}
+          >            {/* Header Section */}
+            <div 
+              className="px-8 py-12 text-white relative"
+              style={{ 
+                background: `linear-gradient(to right, ${theme.colors.primary}, ${theme.colors.primaryLight})` 
+              }}
+            >
               {/* Back Button */}
               <button
                 onClick={() => navigate(-1)}
@@ -246,12 +264,16 @@ const ProfilePage: React.FC = () => {
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Display Name
                     </label>
-                    {isEditing ? (
-                      <input
+                    {isEditing ? (                      <input
                         type="text"
                         value={profile.displayName}
                         onChange={(e) => setProfile(prev => ({ ...prev, displayName: e.target.value }))}
-                        className="w-full px-4 py-3 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent input-field"
+                        style={{
+                          backgroundColor: theme.colors.surface,
+                          borderColor: theme.colors.border,
+                          color: theme.colors.textPrimary
+                        }}
                         placeholder="Your display name"
                       />
                     ) : (
@@ -342,24 +364,102 @@ const ProfilePage: React.FC = () => {
                           </button>
                         )}
                       </span>
-                    ))}
-                    {profile.favoriteGenres.length === 0 && (
+                    ))}                    {profile.favoriteGenres.length === 0 && (
                       <p className="text-gray-500 italic">No favorite genres added yet</p>
                     )}
                   </div>
 
-                  {/* Reading Statistics */}
-                  <div className="mt-8 p-6 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl">
-                    <h3 className="text-lg font-bold text-amber-800 mb-4">Reading Statistics</h3>
+                  {/* App Settings */}
+                  <div className="space-y-6 mt-8">
+                    <h2 className="text-2xl font-bold mb-4" style={{ color: theme.colors.primary }}>
+                      App Settings
+                    </h2>
+                    
+                    <div 
+                      className="p-6 rounded-xl border"
+                      style={{
+                        backgroundColor: theme.colors.surface,
+                        borderColor: theme.colors.border
+                      }}
+                    >
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 
+                              className="text-lg font-semibold mb-1"
+                              style={{ color: theme.colors.textPrimary }}
+                            >
+                              Appearance
+                            </h3>
+                            <p 
+                              className="text-sm"
+                              style={{ color: theme.colors.textSecondary }}
+                            >
+                              Choose your preferred theme for the app
+                            </p>
+                          </div>
+                          <ThemeToggle />
+                        </div>
+                      </div>
+                    </div>
+                  </div>                  {/* Reading Statistics */}
+                  <div 
+                    className="mt-8 p-6 rounded-xl"
+                    style={{ 
+                      background: `linear-gradient(to right, ${theme.colors.surfaceSecondary}, ${theme.colors.surfaceElevated})`
+                    }}
+                  >
+                    <h3 
+                      className="text-lg font-bold mb-4"
+                      style={{ color: theme.colors.primary }}
+                    >
+                      Reading Statistics
+                    </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-amber-600">0</div>
-                        <div className="text-sm text-gray-600">Books Read</div>
+                        <div 
+                          className="text-2xl font-bold"
+                          style={{ color: theme.colors.primary }}
+                        >
+                          0
+                        </div>
+                        <div 
+                          className="text-sm"
+                          style={{ color: theme.colors.textSecondary }}
+                        >
+                          Books Read
+                        </div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-amber-600">0</div>
-                        <div className="text-sm text-gray-600">Pages Read</div>
+                        <div 
+                          className="text-2xl font-bold"
+                          style={{ color: theme.colors.primary }}
+                        >
+                          0
+                        </div>
+                        <div 
+                          className="text-sm"
+                          style={{ color: theme.colors.textSecondary }}
+                        >
+                          Pages Read
+                        </div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Theme Settings */}
+                  <div className="mt-8">
+                    <h3 
+                      className="text-lg font-bold mb-4"
+                      style={{ color: theme.colors.textPrimary }}
+                    >
+                      Preferences
+                    </h3>
+                    <div 
+                      className="p-4 rounded-xl"
+                      style={{ backgroundColor: theme.colors.surface }}
+                    >
+                      <ThemeToggle />
                     </div>
                   </div>
                 </div>

@@ -5,6 +5,7 @@ import { getBookDetails } from '../services/api';
 import { getCachedBookDetails, cacheBookDetails } from '../services/storage';
 import { useBooks } from '../context/BookContext';
 import { usePet } from '../context/PetContext';
+import { useTheme } from '../context/ThemeContext';
 import ConfirmationModal from '../components/ui/ConfirmationModal';
 import { useConfirmationModal } from '../hooks/useConfirmationModal';
 
@@ -14,6 +15,7 @@ const BookDetailsPage: React.FC = () => {
   const location = useLocation();
   const { books, setActiveBook, sessions, notes } = useBooks();
   const { updatePetFromBookCompletion } = usePet();
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [currentBook, setCurrentBook] = useState<any>(null);
   const [isInLibrary, setIsInLibrary] = useState(false);
@@ -220,16 +222,16 @@ const BookDetailsPage: React.FC = () => {
     // Simple back navigation
     navigate(-1);
   };
-
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#F7F5F3]">
+    <div className="max-w-md mx-auto min-h-screen" style={{ backgroundColor: theme.colors.background }}>
       {/* Header with back button */}
-      <div className="p-4 bg-[#F7F5F3]">
+      <div className="p-4" style={{ backgroundColor: theme.colors.background }}>
         <button
           onClick={handleBackNavigation}
-          className="w-8 h-8 flex items-center justify-center bg-[#F0EDE8] rounded-full hover:bg-[#E8E3DD] transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-full hover:opacity-80 transition-colors"
+          style={{ backgroundColor: theme.colors.surface }}
         >
-          <ArrowLeft className="w-5 h-5 text-[#8B7355]" />
+          <ArrowLeft className="w-5 h-5" style={{ color: theme.colors.primary }} />
         </button>
       </div>
 
@@ -243,9 +245,8 @@ const BookDetailsPage: React.FC = () => {
                 src={`https://covers.openlibrary.org/b/id/${currentBook.cover_i}-M.jpg`}
                 alt={currentBook.title}
                 className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-[#8B7355] flex items-center justify-center">
+              />            ) : (
+              <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: theme.colors.primary }}>
                 <BookOpen className="w-8 h-8 text-white" />
               </div>
             )}
@@ -253,63 +254,63 @@ const BookDetailsPage: React.FC = () => {
           
           {/* Book title and author */}
           <div className="flex-1 min-w-0">
-            <h1 className="font-serif text-xl font-medium text-[#3A3A3A] mb-2 leading-tight">
+            <h1 className="font-serif text-xl font-medium mb-2 leading-tight" style={{ color: theme.colors.textPrimary }}>
               {currentBook.title}
             </h1>
             
             {currentBook.author_name && currentBook.author_name.length > 0 && (
-              <p className="text-sm text-[#8B7355] mb-3">by {currentBook.author_name[0]}</p>
+              <p className="text-sm mb-3" style={{ color: theme.colors.textSecondary }}>by {currentBook.author_name[0]}</p>
             )}
             
             {/* Book metadata */}
             <div className="space-y-1">
               {currentBook.first_publish_year && (
-                <p className="text-xs text-[#8B7355]">First published: {currentBook.first_publish_year}</p>
+                <p className="text-xs" style={{ color: theme.colors.textSecondary }}>First published: {currentBook.first_publish_year}</p>
               )}
               {totalPages > 0 && (
-                <p className="text-xs text-[#8B7355]">{totalPages} pages</p>
+                <p className="text-xs" style={{ color: theme.colors.textSecondary }}>{totalPages} pages</p>
               )}
             </div>
           </div>
-        </div>
-        {isInLibrary && totalPages > 0 && (
+        </div>        {isInLibrary && totalPages > 0 && (
           <div className="flex gap-3 mb-6">
             <div className="flex-1">
               <div className="flex justify-between items-center mb-1">
-                <span className="text-xs text-[#8B7355]">Progress</span>
-                <span className="text-xs font-medium text-[#3A3A3A]">{progressPercent}%</span>
+                <span className="text-xs" style={{ color: theme.colors.textSecondary }}>Progress</span>
+                <span className="text-xs font-medium" style={{ color: theme.colors.textPrimary }}>{progressPercent}%</span>
               </div>
               
-              <div className="w-full h-2 bg-[#F0EDE8] rounded-full overflow-hidden mb-2">
+              <div className="w-full h-2 rounded-full overflow-hidden mb-2" style={{ backgroundColor: theme.colors.borderLight }}>
                 <div
-                  className="h-full bg-[#E59554] rounded-full transition-all duration-300 ease-out"
-                  style={{ width: `${progressPercent}%` }}
+                  className="h-full rounded-full transition-all duration-300 ease-out"                  style={{ 
+                    width: `${progressPercent}%`,
+                    backgroundColor: theme.colors.secondary
+                  }}
                 />
               </div>
               
-              <span className="text-xs text-[#8B7355]">
+              <span className="text-xs" style={{ color: theme.colors.textSecondary }}>
                 Page {currentPage} of {totalPages}
               </span>
             </div>
             
-            <div className="w-px bg-[#F0EDE8]"></div>
+            <div className="w-px" style={{ backgroundColor: theme.colors.border }}></div>
             
             <div className="flex flex-col items-center justify-center w-24">
-              <Timer className="w-5 h-5 text-[#8B7355] mb-1" />
-              <span className="text-sm font-medium text-[#3A3A3A]">{formattedTime}</span>
+              <Timer className="w-5 h-5 mb-1" style={{ color: theme.colors.textSecondary }} />
+              <span className="text-sm font-medium" style={{ color: theme.colors.textPrimary }}>{formattedTime}</span>
               <span className="text-xs text-[#8B7355]">Total Time</span>
             </div>
           </div>
         )}
-        
-        {/* Description */}
+          {/* Description */}
         {loading ? (
-          <div className="h-32 bg-[#F0EDE8] animate-pulse rounded-lg mb-6"></div>
+          <div className="h-32 animate-pulse rounded-lg mb-6" style={{ backgroundColor: theme.colors.borderLight }}></div>
         ) : currentBook.description ? (
           <div className="mb-6">
-            <h2 className="font-serif text-lg font-medium text-[#3A3A3A] mb-2">About this book</h2>
+            <h2 className="font-serif text-lg font-medium mb-2" style={{ color: theme.colors.textPrimary }}>About this book</h2>
             <div className="relative">
-              <p className={`text-sm text-[#3A3A3A] leading-relaxed ${!isDescriptionExpanded ? 'line-clamp-4' : ''}`}>
+              <p className={`text-sm leading-relaxed ${!isDescriptionExpanded ? 'line-clamp-4' : ''}`} style={{ color: theme.colors.textPrimary }}>
                 {typeof currentBook.description === 'string' 
                   ? currentBook.description 
                   : 'No description available.'}
@@ -318,7 +319,8 @@ const BookDetailsPage: React.FC = () => {
               {currentBook.description && currentBook.description.length > 200 && (
                 <button
                   onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                  className="mt-2 flex items-center gap-1 text-sm font-medium text-[#8B7355] hover:text-[#3A3A3A] transition-colors"
+                  className="mt-2 flex items-center gap-1 text-sm font-medium hover:opacity-80 transition-colors"
+                  style={{ color: theme.colors.textSecondary }}
                 >
                   {isDescriptionExpanded ? (
                     <>
@@ -352,27 +354,25 @@ const BookDetailsPage: React.FC = () => {
             
             {bookNotes.length > 0 ? (
               <div className="space-y-2">
-                {bookNotes.slice(0, 2).map(note => (
-                  <div key={note.id} className="p-3 bg-white rounded-lg shadow-sm">
+                {bookNotes.slice(0, 2).map(note => (                  <div key={note.id} className="p-3 rounded-lg shadow-sm" style={{ backgroundColor: theme.colors.surface }}>
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-[#8B7355]">
+                      <span className="text-xs" style={{ color: theme.colors.textSecondary }}>
                         {note.chapter ? `Chapter: ${note.chapter}` : ''}
                         {note.chapter && note.page ? ' • ' : ''}
                         {note.page ? `Page ${note.page}` : ''}
                       </span>
-                      <span className="text-xs text-[#8B7355]">
+                      <span className="text-xs" style={{ color: theme.colors.textSecondary }}>
                         {new Date(note.createdAt).toLocaleDateString()}
                       </span>
                     </div>
-                    <p className="text-sm text-[#3A3A3A] line-clamp-2">{note.content}</p>
+                    <p className="text-sm line-clamp-2" style={{ color: theme.colors.textPrimary }}>{note.content}</p>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className="p-4 bg-white rounded-lg shadow-sm flex items-center justify-center">
+            ) : (              <div className="p-4 rounded-lg shadow-sm flex items-center justify-center" style={{ backgroundColor: theme.colors.surface }}>
                 <div className="text-center">
-                  <PenLine className="w-6 h-6 text-[#8B7355] mx-auto mb-2" />
-                  <p className="text-sm text-[#8B7355] mb-1">No notes yet</p>
+                  <PenLine className="w-6 h-6 mx-auto mb-2" style={{ color: theme.colors.textSecondary }} />
+                  <p className="text-sm mb-1" style={{ color: theme.colors.textSecondary }}>No notes yet</p>
                   <button 
                     onClick={() => navigate('/notes/add')}
                     className="text-xs font-medium text-[#D2691E]"
@@ -386,7 +386,7 @@ const BookDetailsPage: React.FC = () => {
         )}
         
         {/* Action buttons */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-[#F0EDE8] flex gap-4 max-w-md mx-auto">
+        <div className="fixed bottom-0 left-0 right-0 p-4 border-t flex gap-4 max-w-md mx-auto" style={{ backgroundColor: theme.colors.surface, borderColor: theme.colors.border }}>
           {isInLibrary ? (
             <>
               {isCompleted ? (
@@ -398,7 +398,8 @@ const BookDetailsPage: React.FC = () => {
                 <>
                   <button
                     onClick={() => navigate('/notes/add')}
-                    className="flex-1 py-3 px-4 bg-white border border-[#D2691E] text-[#D2691E] rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+                    className="flex-1 py-3 px-4 border border-[#D2691E] text-[#D2691E] rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+                    style={{ backgroundColor: theme.colors.surface }}
                   >
                     <PenLine className="w-5 h-5" />
                     Add Note
@@ -429,7 +430,8 @@ const BookDetailsPage: React.FC = () => {
             <>
               <button
                 onClick={() => navigate('/library')}
-                className="flex-1 py-3 px-4 bg-white border border-[#8B7355] text-[#8B7355] rounded-lg font-medium text-sm"
+                className="flex-1 py-3 px-4 border border-[#8B7355] text-[#8B7355] rounded-lg font-medium text-sm"
+                style={{ backgroundColor: theme.colors.surface }}
               >
                 View Library
               </button>
@@ -444,27 +446,27 @@ const BookDetailsPage: React.FC = () => {
             </>
           )}
         </div>
-      </div>
-
-      {/* Category Selection Modal */}
+      </div>      {/* Category Selection Modal */}
       {showCategoryModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
-            <h3 className="font-serif text-lg font-medium text-[#3A3A3A] mb-4">Add to Library</h3>
-            <p className="text-sm text-[#8B7355] mb-6">Choose where to add this book:</p>
+          <div className="rounded-xl p-6 w-full max-w-sm" style={{ backgroundColor: theme.colors.surface }}>
+            <h3 className="font-serif text-lg font-medium mb-4" style={{ color: theme.colors.textPrimary }}>Add to Library</h3>
+            <p className="text-sm mb-6" style={{ color: theme.colors.textSecondary }}>Choose where to add this book:</p>
             
             <div className="space-y-3">
               <button
                 onClick={() => handleAddToLibrary('want-to-read')}
-                className="w-full p-4 bg-[#F0EDE8] rounded-lg text-left hover:bg-[#E8E3DD] transition-colors"
+                className="w-full p-4 rounded-lg text-left hover:opacity-80 transition-colors"
+                style={{ backgroundColor: theme.colors.borderLight }}
               >
-                <div className="font-medium text-[#3A3A3A] mb-1">Want to Read</div>
-                <div className="text-xs text-[#8B7355]">Save for later reading</div>
+                <div className="font-medium mb-1" style={{ color: theme.colors.textPrimary }}>Want to Read</div>
+                <div className="text-xs" style={{ color: theme.colors.textSecondary }}>Save for later reading</div>
               </button>
               
               <button
                 onClick={() => handleAddToLibrary('currently-reading')}
-                className="w-full p-4 bg-[#8B7355] text-white rounded-lg text-left hover:bg-[#7A6349] transition-colors"
+                className="w-full p-4 text-white rounded-lg text-left hover:opacity-90 transition-colors"
+                style={{ backgroundColor: theme.colors.primary }}
               >
                 <div className="font-medium mb-1">Start Reading Now</div>
                 <div className="text-xs opacity-90">Add to library and begin reading session</div>
@@ -473,7 +475,8 @@ const BookDetailsPage: React.FC = () => {
             
             <button
               onClick={() => setShowCategoryModal(false)}
-              className="w-full mt-4 py-2 text-sm text-[#8B7355] hover:text-[#3A3A3A] transition-colors"
+              className="w-full mt-4 py-2 text-sm hover:opacity-80 transition-colors"
+              style={{ color: theme.colors.textSecondary }}
             >
               Cancel
             </button>

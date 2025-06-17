@@ -56,7 +56,7 @@ const LandingPage: React.FC = () => {
     }
   ];
   return (
-    <div className="min-h-screen bg-[#F7F5F3] max-w-full overflow-x-hidden">
+    <div className="min-h-screen style={{backgroundColor: lightTheme.colors.background}} max-w-full overflow-x-hidden">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-6 py-12 lg:px-8">

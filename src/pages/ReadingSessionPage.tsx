@@ -9,11 +9,13 @@ import { ReadingNote } from '../types';
 import { getBookCoverUrl } from '../services/api';
 import ConfirmationModal from '../components/ui/ConfirmationModal';
 import { useConfirmationModal } from '../hooks/useConfirmationModal';
+import { useTheme } from '../context/ThemeContext';
 
 const ReadingSessionPage: React.FC = () => {
   const navigate = useNavigate();
   const { currentBook, addSession, addNote } = useBooks();
   const { updatePetFromReading } = usePet();
+  const { theme } = useTheme();
   const modal = useConfirmationModal();
   
   const [startPage, setStartPage] = useState(1);
@@ -247,11 +249,9 @@ const ReadingSessionPage: React.FC = () => {
         'alert'
       );
     }
-  };
-
-  return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#F7F5F3] pb-20">
-      <header className="p-4 bg-[#F0EDE8] flex items-center gap-3 shadow-sm">
+  };  return (
+    <div className="max-w-md mx-auto min-h-screen pb-20" style={{ backgroundColor: theme.colors.background }}>
+      <header className="p-4 flex items-center gap-3 shadow-sm" style={{ backgroundColor: theme.colors.surface }}>
         <button
           onClick={() => {
             if (isActive || elapsedTime > 0) {
@@ -277,23 +277,26 @@ const ReadingSessionPage: React.FC = () => {
               navigate(-1);
             }
           }}
-          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F7F5F3] transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-full transition-colors hover:opacity-80"
+          style={{ 
+            backgroundColor: theme.colors.borderLight,
+            color: theme.colors.textSecondary
+          }}
         >
-          <ArrowLeft className="w-5 h-5 text-[#8B7355]" />
+          <ArrowLeft className="w-5 h-5" />
         </button>
         
-        <h1 className="font-serif text-lg font-medium text-[#3A3A3A]">Reading Session</h1>
+        <h1 className="font-serif text-lg font-medium" style={{ color: theme.colors.textPrimary }}>Reading Session</h1>
         
         {isActive && (
           <div className="ml-auto">
             <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
           </div>
         )}
-      </header>
-      
+      </header>      
       <main className="p-4">
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
-          <div className="flex items-center p-4 border-b border-[#F0EDE8]">
+        <div className="rounded-xl shadow-sm overflow-hidden mb-6" style={{ backgroundColor: theme.colors.surface }}>
+          <div className="flex items-center p-4" style={{ borderBottom: `1px solid ${theme.colors.border}` }}>
             <div className="w-12 h-16 rounded overflow-hidden mr-3">
               {currentBook.cover_i ? (
                 <img
@@ -302,25 +305,25 @@ const ReadingSessionPage: React.FC = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-[#8B7355]"></div>
+                <div className="w-full h-full" style={{ backgroundColor: theme.colors.secondary }}></div>
               )}
             </div>
             
             <div>
-              <h2 className="font-serif text-base font-medium text-[#3A3A3A] line-clamp-1">
+              <h2 className="font-serif text-base font-medium line-clamp-1" style={{ color: theme.colors.textPrimary }}>
                 {currentBook.title}
               </h2>
               
               {currentBook.author_name && currentBook.author_name.length > 0 && (
-                <p className="text-sm text-[#8B7355]">by {currentBook.author_name[0]}</p>
+                <p className="text-sm" style={{ color: theme.colors.textSecondary }}>by {currentBook.author_name[0]}</p>
               )}
             </div>
           </div>
           
           <div className="p-6">
             <div className="flex justify-center mb-8">
-              <div className="w-24 h-24 rounded-full bg-[#F7F5F3] flex items-center justify-center shadow-inner">
-                <span className="font-serif text-2xl font-medium text-[#3A3A3A]">
+              <div className="w-24 h-24 rounded-full flex items-center justify-center shadow-inner" style={{ backgroundColor: theme.colors.borderLight }}>
+                <span className="font-serif text-2xl font-medium" style={{ color: theme.colors.textPrimary }}>
                   {formatTime(elapsedTime)}
                 </span>
               </div>
@@ -329,15 +332,15 @@ const ReadingSessionPage: React.FC = () => {
             <div className="flex justify-center mb-8">
               <button
                 onClick={isActive ? pauseTimer : startTimer}
-                className="w-16 h-16 rounded-full bg-[#D2691E] text-white flex items-center justify-center shadow-md hover:bg-[#A0522D] transition-colors"
+                className="w-16 h-16 rounded-full text-white flex items-center justify-center shadow-md transition-colors hover:opacity-90"
+                style={{ backgroundColor: theme.colors.primary }}
               >
                 {isActive ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8" />}
               </button>
-            </div>
-            
+            </div>            
             <div className="flex gap-6 mb-4">
               <div className="flex-1">
-                <label className="block text-sm text-[#8B7355] mb-2">Start Page</label>
+                <label className="block text-sm mb-2" style={{ color: theme.colors.textSecondary }}>Start Page</label>
                 <input
                   type="number"
                   value={startPage}
@@ -351,20 +354,30 @@ const ReadingSessionPage: React.FC = () => {
                   }}
                   min="1"
                   max={maxPages}
-                  className="w-full p-2 border border-[#E5E5E5] rounded-md text-[#3A3A3A]"
+                  className="w-full p-2 rounded-md"
+                  style={{ 
+                    border: `1px solid ${theme.colors.border}`,
+                    backgroundColor: theme.colors.surface,
+                    color: theme.colors.textPrimary
+                  }}
                   disabled={isActive || elapsedTime > 0}
                 />
               </div>
               
               <div className="flex-1">
-                <label className="block text-sm text-[#8B7355] mb-2">End Page</label>
+                <label className="block text-sm mb-2" style={{ color: theme.colors.textSecondary }}>End Page</label>
                 <input
                   type="number"
                   value={endPage}
                   onChange={(e) => handleEndPageChange(parseInt(e.target.value) || startPage)}
                   min={startPage}
                   max={maxPages}
-                  className="w-full p-2 border border-[#E5E5E5] rounded-md text-[#3A3A3A]"
+                  className="w-full p-2 rounded-md"
+                  style={{ 
+                    border: `1px solid ${theme.colors.border}`,
+                    backgroundColor: theme.colors.surface,
+                    color: theme.colors.textPrimary
+                  }}
                 />
               </div>
             </div>
@@ -393,45 +406,57 @@ const ReadingSessionPage: React.FC = () => {
                   📘 Page count unavailable for this book. You can still track your reading progress by entering the pages you read.
                 </p>
               </div>
-            )}
-            
+            )}            
             <button
               onClick={() => setShowNoteForm(!showNoteForm)}
-              className="w-full py-2 text-sm text-[#D2691E] mb-2"
+              className="w-full py-2 text-sm mb-2"
+              style={{ color: theme.colors.primary }}
             >
               {showNoteForm ? 'Hide Note Form' : '+ Add a note about this session'}
             </button>
             
             {showNoteForm && (
-              <div className="space-y-4 mb-4 p-4 bg-[#F7F5F3] rounded-lg">
+              <div className="space-y-4 mb-4 p-4 rounded-lg" style={{ backgroundColor: theme.colors.borderLight }}>
                 <div>
-                  <label className="block text-sm text-[#8B7355] mb-2">Chapter (optional)</label>
+                  <label className="block text-sm mb-2" style={{ color: theme.colors.textSecondary }}>Chapter (optional)</label>
                   <input
                     type="text"
                     value={noteChapter}
                     onChange={(e) => setNoteChapter(e.target.value)}
                     placeholder="e.g. Chapter 5"
-                    className="w-full p-2 border border-[#E5E5E5] rounded-md text-[#3A3A3A]"
+                    className="w-full p-2 rounded-md"
+                    style={{ 
+                      border: `1px solid ${theme.colors.border}`,
+                      backgroundColor: theme.colors.surface,
+                      color: theme.colors.textPrimary
+                    }}
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm text-[#8B7355] mb-2">Note</label>
+                  <label className="block text-sm mb-2" style={{ color: theme.colors.textSecondary }}>Note</label>
                   <textarea
                     value={noteContent}
                     onChange={(e) => setNoteContent(e.target.value)}
                     placeholder="Write your thoughts about this reading session..."
                     rows={4}
-                    className="w-full p-2 border border-[#E5E5E5] rounded-md text-[#3A3A3A] resize-none"
+                    className="w-full p-2 rounded-md resize-none"
+                    style={{ 
+                      border: `1px solid ${theme.colors.border}`,
+                      backgroundColor: theme.colors.surface,
+                      color: theme.colors.textPrimary
+                    }}
                   />
                 </div>
               </div>
             )}
           </div>
         </div>
-      </main>
-      
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-[#F0EDE8] flex gap-4 max-w-md mx-auto">
+      </main>      
+      <div className="fixed bottom-0 left-0 right-0 p-4 flex gap-4 max-w-md mx-auto" style={{ 
+        backgroundColor: theme.colors.surface, 
+        borderTop: `1px solid ${theme.colors.border}` 
+      }}>
         <button
           onClick={() => {
             modal.showConfirm(
@@ -449,7 +474,12 @@ const ReadingSessionPage: React.FC = () => {
               }
             );
           }}
-          className="flex-1 py-3 px-4 bg-white border border-[#E5E5E5] text-[#8B7355] rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+          className="flex-1 py-3 px-4 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors hover:opacity-80"
+          style={{ 
+            backgroundColor: theme.colors.surface,
+            border: `1px solid ${theme.colors.border}`,
+            color: theme.colors.textSecondary
+          }}
         >
           <X className="w-5 h-5" />
           Cancel
@@ -458,7 +488,7 @@ const ReadingSessionPage: React.FC = () => {
         {hasReachedLastPage() ? (
           <button
             onClick={handleMarkAsFinished}
-            className="flex-1 py-3 px-4 bg-green-600 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+            className="flex-1 py-3 px-4 bg-green-600 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 hover:bg-green-700 transition-colors"
           >
             <Trophy className="w-5 h-5" />
             Mark as Finished
@@ -466,29 +496,28 @@ const ReadingSessionPage: React.FC = () => {
         ) : (
           <button
             onClick={handleFinishSession}
-            className="flex-1 py-3 px-4 bg-[#D2691E] text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-3 px-4 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:opacity-90"
+            style={{ backgroundColor: theme.colors.primary }}
             disabled={elapsedTime <= 0 || endPage < startPage}
           >
             <Check className="w-5 h-5" />
             Finish Session
           </button>
         )}
-      </div>
-
-      {/* Book Completion Modal */}
+      </div>      {/* Book Completion Modal */}
       {showCompletionModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
+          <div className="rounded-xl p-6 w-full max-w-sm" style={{ backgroundColor: theme.colors.surface }}>
             <div className="text-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Trophy className="w-8 h-8 text-green-600" />
               </div>
               
-              <h3 className="font-serif text-lg font-medium text-[#3A3A3A] mb-2">
+              <h3 className="font-serif text-lg font-medium mb-2" style={{ color: theme.colors.textPrimary }}>
                 Congratulations!
               </h3>
               
-              <p className="text-sm text-[#8B7355] mb-6">
+              <p className="text-sm mb-6" style={{ color: theme.colors.textSecondary }}>
                 You've reached the last page of "{currentBook.title}". Would you like to mark it as completed?
               </p>
               
@@ -502,7 +531,12 @@ const ReadingSessionPage: React.FC = () => {
                 
                 <button
                   onClick={() => setShowCompletionModal(false)}
-                  className="w-full py-2 px-4 bg-white border border-[#E5E5E5] text-[#8B7355] rounded-lg font-medium text-sm hover:bg-[#F7F5F3] transition-colors"
+                  className="w-full py-2 px-4 rounded-lg font-medium text-sm transition-colors hover:opacity-80"
+                  style={{ 
+                    backgroundColor: theme.colors.surface,
+                    border: `1px solid ${theme.colors.border}`,
+                    color: theme.colors.textSecondary
+                  }}
                 >
                   Continue Reading
                 </button>

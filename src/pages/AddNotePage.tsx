@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Save, BookOpen } from 'lucide-react';
 import { useBooks } from '../context/BookContext';
+import { useTheme } from '../context/ThemeContext';
 import { v4 as uuidv4 } from 'uuid';
 import { ReadingNote } from '../types';
 import ConfirmationModal from '../components/ui/ConfirmationModal';
@@ -11,6 +12,7 @@ const AddNotePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { books, currentBook, addNote, notes, updateNote } = useBooks();
+  const { theme } = useTheme();
   const modal = useConfirmationModal();
   const editId = searchParams.get('edit');
   
@@ -87,19 +89,18 @@ const AddNotePage: React.FC = () => {
       navigate(-1);
     }
   };
-
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#F7F5F3]">
-      <header className="p-4 bg-[#F7F5F3] border-b border-[#E8E3DD]">
+    <div className="max-w-md mx-auto min-h-screen" style={{ backgroundColor: theme.colors.background }}>
+      <header className="p-4 border-b" style={{ backgroundColor: theme.colors.background, borderColor: theme.colors.border }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={handleBackPress}
-              className="w-8 h-8 rounded-full bg-[#F0EDE8] flex items-center justify-center"
-            >
-              <ArrowLeft className="w-5 h-5 text-[#8B7355]" />
+              className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: theme.colors.surface }}            >
+              <ArrowLeft className="w-5 h-5" style={{ color: theme.colors.textSecondary }} />
             </button>
-            <h1 className="font-serif text-xl font-medium text-[#3A3A3A]">
+            <h1 className="font-serif text-xl font-medium" style={{ color: theme.colors.textPrimary }}>
               {editId ? 'Edit Note' : 'Add Note'}
             </h1>
           </div>
@@ -115,16 +116,20 @@ const AddNotePage: React.FC = () => {
       </header>
 
       <main className="p-4 space-y-6">
-        {/* Book Selection */}
-        <div>
-          <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
+        {/* Book Selection */}        <div>
+          <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.textPrimary }}>
             Select Book
           </label>
           <div className="relative">
             <select
               value={selectedBookId}
               onChange={(e) => setSelectedBookId(e.target.value)}
-              className="w-full p-3 pr-10 bg-white border border-[#E8E3DD] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B7355] text-[#3A3A3A] appearance-none"
+              className="w-full p-3 pr-10 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B7355] appearance-none"
+              style={{ 
+                backgroundColor: theme.colors.surface, 
+                borderColor: theme.colors.border, 
+                color: theme.colors.textPrimary 
+              }}
             >
               <option value="">Choose a book...</option>
               {books.map((book) => (
@@ -133,14 +138,12 @@ const AddNotePage: React.FC = () => {
                 </option>
               ))}
             </select>
-            <BookOpen className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#8B7355] pointer-events-none" />
+            <BookOpen className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none" style={{ color: theme.colors.textSecondary }} />
           </div>
-        </div>
-
-        {/* Location Details */}
+        </div>        {/* Location Details */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.textPrimary }}>
               Chapter (optional)
             </label>
             <input
@@ -148,12 +151,17 @@ const AddNotePage: React.FC = () => {
               value={chapter}
               onChange={(e) => setChapter(e.target.value)}
               placeholder="e.g., Chapter 5"
-              className="w-full p-3 bg-white border border-[#E8E3DD] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B7355] text-[#3A3A3A]"
+              className="w-full p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B7355]"
+              style={{ 
+                backgroundColor: theme.colors.surface, 
+                borderColor: theme.colors.border, 
+                color: theme.colors.textPrimary 
+              }}
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.textPrimary }}>
               Page (optional)
             </label>
             <input
@@ -161,14 +169,17 @@ const AddNotePage: React.FC = () => {
               value={page}
               onChange={(e) => setPage(e.target.value)}
               placeholder="Page number"
-              className="w-full p-3 bg-white border border-[#E8E3DD] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B7355] text-[#3A3A3A]"
+              className="w-full p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B7355]"
+              style={{ 
+                backgroundColor: theme.colors.surface, 
+                borderColor: theme.colors.border, 
+                color: theme.colors.textPrimary 
+              }}
             />
           </div>
-        </div>
-
-        {/* Note Content */}
+        </div>        {/* Note Content */}
         <div>
-          <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
+          <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.textPrimary }}>
             Your Note
           </label>
           <textarea
@@ -176,17 +187,22 @@ const AddNotePage: React.FC = () => {
             onChange={(e) => setContent(e.target.value)}
             placeholder="Write your thoughts, insights, or reflections about this part of the book..."
             rows={8}
-            className="w-full p-3 bg-white border border-[#E8E3DD] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B7355] text-[#3A3A3A] resize-none"
+            className="w-full p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8B7355] resize-none"
+            style={{ 
+              backgroundColor: theme.colors.surface, 
+              borderColor: theme.colors.border, 
+              color: theme.colors.textPrimary 
+            }}
           />
-          <p className="text-xs text-[#8B7355] mt-2">
+          <p className="text-xs mt-2" style={{ color: theme.colors.textSecondary }}>
             {content.length}/500 characters
           </p>
         </div>
 
         {/* Tips */}
-        <div className="bg-[#F0EDE8] rounded-xl p-4">
-          <h3 className="font-medium text-[#3A3A3A] mb-2">💡 Note-taking tips:</h3>
-          <ul className="text-sm text-[#8B7355] space-y-1">
+        <div className="rounded-xl p-4" style={{ backgroundColor: theme.colors.surface }}>
+          <h3 className="font-medium mb-2" style={{ color: theme.colors.textPrimary }}>💡 Note-taking tips:</h3>
+          <ul className="text-sm space-y-1" style={{ color: theme.colors.textSecondary }}>
             <li>• Write down key insights or quotes that resonate with you</li>
             <li>• Note questions or thoughts the reading sparked</li>
             <li>• Record connections to other books or personal experiences</li>

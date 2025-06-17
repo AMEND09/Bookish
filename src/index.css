@@ -2,6 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme CSS Custom Properties */
+:root {
+  /* Light theme colors */
+  --color-primary: #D2691E;
+  --color-primary-light: #E89556;
+  --color-primary-dark: #B8571A;
+  --color-secondary: #8B7355;
+  --color-secondary-light: #A68B6B;
+  --color-secondary-dark: #6B5A47;
+  --color-background: #F7F5F3;
+  --color-surface: #FFFFFF;
+  --color-surface-elevated: #FEFEFE;
+  --color-surface-secondary: #F5F5F5;
+  --color-text-primary: #3A3A3A;
+  --color-text-secondary: #8B7355;
+  --color-text-tertiary: #A0A0A0;
+  --color-text-inverse: #FFFFFF;
+  --color-border: #E8E3DD;
+  --color-border-light: #F0EDE8;
+  --color-border-dark: #D4C4B0;
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
+  --color-overlay: rgba(0, 0, 0, 0.5);
+  --color-overlay-light: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] {
+  /* Dark theme colors - softer and more readable */
+  --color-primary: #E89556;
+  --color-primary-light: #F4A971;
+  --color-primary-dark: #D2691E;
+  --color-secondary: #A68B6B;
+  --color-secondary-light: #B89980;
+  --color-secondary-dark: #8B7355;
+  --color-background: #0F0F0F;
+  --color-surface: #1A1A1A;
+  --color-surface-elevated: #252525;
+  --color-surface-secondary: #1F1F1F;
+  --color-text-primary: #F5F5F5;
+  --color-text-secondary: #C0C0C0;
+  --color-text-tertiary: #909090;
+  --color-text-inverse: #0F0F0F;
+  --color-border: #333333;
+  --color-border-light: #2A2A2A;
+  --color-border-dark: #444444;
+  --color-success: #4ADE80;
+  --color-warning: #FBBF24;
+  --color-error: #FB7185;
+  --color-info: #60A5FA;
+  --color-overlay: rgba(0, 0, 0, 0.8);
+  --color-overlay-light: rgba(0, 0, 0, 0.6);
+}
+
+/* Base styles with theme support */
+body {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Component base styles */
+.btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-light);
+}
+
+.btn-secondary {
+  background-color: var(--color-surface-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-surface-elevated);
+}
+
+.card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  transition: all 0.2s ease;
+}
+
+.input-field {
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  transition: all 0.2s ease;
+}
+
+.input-field:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(210, 105, 30, 0.1);
+}
+
+[data-theme="dark"] .input-field:focus {
+  box-shadow: 0 0 0 3px rgba(232, 149, 86, 0.1);
+}
+
 /* Toast Animation */
 @keyframes slide-in {
   from {

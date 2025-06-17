@@ -4,11 +4,13 @@ import { ArrowLeft, BookOpen, Clock, Target, TrendingUp, Calendar, Award } from 
 import { getStats, getStreak, getSessions } from '../services/storage';
 import { useBooks } from '../context/BookContext';
 import { usePet } from '../context/PetContext';
+import { useTheme } from '../context/ThemeContext';
 
 const StatsPage: React.FC = () => {
   const navigate = useNavigate();
   const { books } = useBooks();
   const { pet } = usePet();
+  const { theme } = useTheme();
   const stats = getStats();
   const streak = getStreak();
   const sessions = getSessions();
@@ -45,39 +47,36 @@ const StatsPage: React.FC = () => {
   };
 
   const monthlyStats = getCurrentMonthStats();
-
   const StatCard: React.FC<{ icon: React.ElementType; title: string; value: string; subtitle?: string }> = 
     ({ icon: Icon, title, value, subtitle }) => (
-      <div className="bg-white rounded-xl shadow-sm p-4">
+      <div className="rounded-xl shadow-sm p-4" style={{ backgroundColor: theme.colors.surface }}>
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-8 h-8 bg-[#F0EDE8] rounded-lg flex items-center justify-center">
-            <Icon className="w-4 h-4 text-[#8B7355]" />
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: theme.colors.borderLight }}>
+            <Icon className="w-4 h-4" style={{ color: theme.colors.textSecondary }} />
           </div>
-          <span className="text-sm text-[#8B7355] font-medium">{title}</span>
+          <span className="text-sm font-medium" style={{ color: theme.colors.textSecondary }}>{title}</span>
         </div>
-        <p className="text-2xl font-serif font-medium text-[#3A3A3A] mb-1">{value}</p>
-        {subtitle && <p className="text-xs text-[#8B7355]">{subtitle}</p>}
+        <p className="text-2xl font-serif font-medium mb-1" style={{ color: theme.colors.textPrimary }}>{value}</p>
+        {subtitle && <p className="text-xs" style={{ color: theme.colors.textSecondary }}>{subtitle}</p>}
       </div>
     );
-
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#F7F5F3]">
-      <header className="p-4 bg-[#F7F5F3] border-b border-[#E8E3DD]">
+    <div className="max-w-md mx-auto min-h-screen" style={{ backgroundColor: theme.colors.background }}>
+      <header className="p-4" style={{ backgroundColor: theme.colors.background, borderBottom: `1px solid ${theme.colors.border}` }}>
         <div className="flex items-center gap-3">
           <button 
             onClick={() => navigate('/')}
-            className="w-8 h-8 rounded-full bg-[#F0EDE8] flex items-center justify-center"
+            className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: theme.colors.borderLight }}
           >
-            <ArrowLeft className="w-5 h-5 text-[#8B7355]" />
+            <ArrowLeft className="w-5 h-5" style={{ color: theme.colors.textSecondary }} />
           </button>
-          <h1 className="font-serif text-xl font-medium text-[#3A3A3A]">Reading Statistics</h1>
+          <h1 className="font-serif text-xl font-medium" style={{ color: theme.colors.textPrimary }}>Reading Statistics</h1>
         </div>
-      </header>
-
-      <main className="p-4 space-y-6">
+      </header>      <main className="p-4 space-y-6">
         {/* Overview Stats */}
         <section>
-          <h2 className="font-serif text-lg font-medium text-[#3A3A3A] mb-3">Overview</h2>
+          <h2 className="font-serif text-lg font-medium mb-3" style={{ color: theme.colors.textPrimary }}>Overview</h2>
           <div className="grid grid-cols-2 gap-3">
             <StatCard 
               icon={BookOpen}
@@ -108,34 +107,32 @@ const StatsPage: React.FC = () => {
 
         {/* This Month */}
         <section>
-          <h2 className="font-serif text-lg font-medium text-[#3A3A3A] mb-3">This Month</h2>
+          <h2 className="font-serif text-lg font-medium mb-3" style={{ color: theme.colors.textPrimary }}>This Month</h2>
           <div className="grid grid-cols-1 gap-3">
-            <div className="bg-white rounded-xl shadow-sm p-4">
+            <div className="rounded-xl shadow-sm p-4" style={{ backgroundColor: theme.colors.surface }}>
               <div className="flex items-center gap-3 mb-3">
-                <Calendar className="w-5 h-5 text-[#8B7355]" />
-                <span className="font-medium text-[#3A3A3A]">Monthly Progress</span>
+                <Calendar className="w-5 h-5" style={{ color: theme.colors.textSecondary }} />
+                <span className="font-medium" style={{ color: theme.colors.textPrimary }}>Monthly Progress</span>
               </div>
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <p className="text-lg font-serif font-medium text-[#3A3A3A]">{monthlyStats.sessions}</p>
-                  <p className="text-xs text-[#8B7355]">sessions</p>
+                  <p className="text-lg font-serif font-medium" style={{ color: theme.colors.textPrimary }}>{monthlyStats.sessions}</p>
+                  <p className="text-xs" style={{ color: theme.colors.textSecondary }}>sessions</p>
                 </div>
                 <div>
-                  <p className="text-lg font-serif font-medium text-[#3A3A3A]">{formatTime(monthlyStats.time)}</p>
-                  <p className="text-xs text-[#8B7355]">reading time</p>
+                  <p className="text-lg font-serif font-medium" style={{ color: theme.colors.textPrimary }}>{formatTime(monthlyStats.time)}</p>
+                  <p className="text-xs" style={{ color: theme.colors.textSecondary }}>reading time</p>
                 </div>
                 <div>
-                  <p className="text-lg font-serif font-medium text-[#3A3A3A]">{monthlyStats.pages}</p>
-                  <p className="text-xs text-[#8B7355]">pages</p>
+                  <p className="text-lg font-serif font-medium" style={{ color: theme.colors.textPrimary }}>{monthlyStats.pages}</p>
+                  <p className="text-xs" style={{ color: theme.colors.textSecondary }}>pages</p>
                 </div>
               </div>
             </div>
           </div>
-        </section>
-
-        {/* Recent Activity */}
+        </section>        {/* Recent Activity */}
         <section>
-          <h2 className="font-serif text-lg font-medium text-[#3A3A3A] mb-3">Recent Activity</h2>
+          <h2 className="font-serif text-lg font-medium mb-3" style={{ color: theme.colors.textPrimary }}>Recent Activity</h2>
           <div className="grid grid-cols-2 gap-3">
             <StatCard 
               icon={Clock}
@@ -162,24 +159,24 @@ const StatsPage: React.FC = () => {
 
         {/* Pet Stats */}
         <section>
-          <h2 className="font-serif text-lg font-medium text-[#3A3A3A] mb-3">Reading Companion</h2>
-          <div className="bg-white rounded-xl shadow-sm p-4">
+          <h2 className="font-serif text-lg font-medium mb-3" style={{ color: theme.colors.textPrimary }}>Reading Companion</h2>
+          <div className="rounded-xl shadow-sm p-4" style={{ backgroundColor: theme.colors.surface }}>
             <div className="flex items-center gap-3 mb-3">
-              <Award className="w-5 h-5 text-[#8B7355]" />
-              <span className="font-medium text-[#3A3A3A]">{pet.name}'s Progress</span>
+              <Award className="w-5 h-5" style={{ color: theme.colors.textSecondary }} />
+              <span className="font-medium" style={{ color: theme.colors.textPrimary }}>{pet.name}'s Progress</span>
             </div>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-lg font-serif font-medium text-[#3A3A3A]">{pet.level}</p>
-                <p className="text-xs text-[#8B7355]">level</p>
+                <p className="text-lg font-serif font-medium" style={{ color: theme.colors.textPrimary }}>{pet.level}</p>
+                <p className="text-xs" style={{ color: theme.colors.textSecondary }}>level</p>
               </div>
               <div>
-                <p className="text-lg font-serif font-medium text-[#3A3A3A]">{pet.happiness}%</p>
-                <p className="text-xs text-[#8B7355]">happiness</p>
+                <p className="text-lg font-serif font-medium" style={{ color: theme.colors.textPrimary }}>{pet.happiness}%</p>
+                <p className="text-xs" style={{ color: theme.colors.textSecondary }}>happiness</p>
               </div>
               <div>
-                <p className="text-lg font-serif font-medium text-[#3A3A3A]">{pet.experience}</p>
-                <p className="text-xs text-[#8B7355]">experience</p>
+                <p className="text-lg font-serif font-medium" style={{ color: theme.colors.textPrimary }}>{pet.experience}</p>
+                <p className="text-xs" style={{ color: theme.colors.textSecondary }}>experience</p>
               </div>
             </div>
           </div>
@@ -187,14 +184,15 @@ const StatsPage: React.FC = () => {
 
         {sessions.length === 0 && (
           <div className="text-center py-8">
-            <TrendingUp className="w-16 h-16 text-[#8B7355] mx-auto mb-4" />
-            <h3 className="font-serif text-lg font-medium text-[#3A3A3A] mb-2">Start tracking your reading</h3>
-            <p className="text-sm text-[#8B7355] mb-6">
+            <TrendingUp className="w-16 h-16 mx-auto mb-4" style={{ color: theme.colors.textSecondary }} />
+            <h3 className="font-serif text-lg font-medium mb-2" style={{ color: theme.colors.textPrimary }}>Start tracking your reading</h3>
+            <p className="text-sm mb-6" style={{ color: theme.colors.textSecondary }}>
               Begin a reading session to see your statistics here
             </p>
             <button
               onClick={() => navigate('/search')}
-              className="bg-[#8B7355] text-white px-6 py-3 rounded-xl font-medium"
+              className="px-6 py-3 rounded-xl font-medium text-white"
+              style={{ backgroundColor: theme.colors.secondary }}
             >
               Find a Book to Read
             </button>

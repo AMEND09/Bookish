@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart, Zap, Apple, Bed, RefreshCw, Edit3 } from 'lucide-react';
 import { usePet } from '../context/PetContext';
+import { useTheme } from '../context/ThemeContext';
 
 const PetPage: React.FC = () => {
   const navigate = useNavigate();
-  const { 
+  const { theme } = useTheme();
+  const {
     pet, 
     petStats, 
     feedPet, 
@@ -79,23 +81,21 @@ const PetPage: React.FC = () => {
 
   const evolutionReq = getPetEvolutionRequirement();
 
-  return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#F7F5F3]">
-      <header className="p-4 bg-[#F7F5F3] border-b border-[#E8E3DD]">
-        <div className="flex items-center gap-3">
-          <button 
+  return (    <div className="max-w-md mx-auto min-h-screen" style={{ backgroundColor: theme.colors.background }}>
+      <header className="p-4" style={{ backgroundColor: theme.colors.background, borderBottom: `1px solid ${theme.colors.border}` }}>
+        <div className="flex items-center gap-3">          <button 
             onClick={() => navigate(-1)}
-            className="w-8 h-8 rounded-full bg-[#F0EDE8] flex items-center justify-center"
+            className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: theme.colors.borderLight }}
           >
-            <ArrowLeft className="w-5 h-5 text-[#8B7355]" />
+            <ArrowLeft className="w-5 h-5" style={{ color: theme.colors.textSecondary }} />
           </button>
-          <h1 className="font-serif text-xl font-medium text-[#3A3A3A]">My Reading Pet</h1>
+          <h1 className="font-serif text-xl font-medium" style={{ color: theme.colors.textPrimary }}>My Reading Pet</h1>
         </div>
       </header>
 
-      <main className="p-4 space-y-6">
-        {/* Pet Display */}
-        <div className="bg-white rounded-xl shadow-sm p-6 text-center">
+      <main className="p-4 space-y-6">        {/* Pet Display */}
+        <div className="rounded-xl shadow-sm p-6 text-center" style={{ backgroundColor: theme.colors.surface }}>
           <div className="text-8xl mb-4">{getPetEmoji()}</div>
           
           <div className="mb-4">
@@ -105,25 +105,33 @@ const PetPage: React.FC = () => {
                   type="text"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="text-2xl font-serif font-medium bg-[#F0EDE8] rounded px-3 py-1 border text-center"
+                  className="text-2xl font-serif font-medium rounded px-3 py-1 border text-center"
+                  style={{ 
+                    backgroundColor: theme.colors.borderLight,
+                    color: theme.colors.textPrimary,
+                    borderColor: theme.colors.border
+                  }}
                   onBlur={handleRename}
                   onKeyPress={(e) => e.key === 'Enter' && handleRename()}
                   autoFocus
                 />
               </div>
             ) : (
-              <div className="flex items-center justify-center gap-2">
-                <h2 className="text-2xl font-serif font-medium text-[#3A3A3A]">{pet.name}</h2>
+              <div className="flex items-center justify-center gap-2">                <h2 className="text-2xl font-serif font-medium" style={{ color: theme.colors.textPrimary }}>{pet.name}</h2>
                 <button
                   onClick={() => setIsRenaming(true)}
-                  className="p-1 text-[#8B7355] hover:bg-[#F0EDE8] rounded"
+                  className="p-1 rounded transition-colors hover:opacity-80"
+                  style={{ 
+                    color: theme.colors.textSecondary,
+                    backgroundColor: theme.colors.borderLight
+                  }}
                 >
                   <Edit3 className="w-4 h-4" />
                 </button>
               </div>
             )}
             
-            <div className="flex items-center justify-center gap-2 text-lg text-[#8B7355] mb-2">
+            <div className="flex items-center justify-center gap-2 text-lg mb-2" style={{ color: theme.colors.textSecondary }}>
               <span>Level {pet.level}</span>
               <span>•</span>
               <span className="capitalize">{pet.evolutionStage}</span>
@@ -137,25 +145,23 @@ const PetPage: React.FC = () => {
                 ✨ Evolve to {evolutionReq.stage}!
               </button>
             )}
-          </div>
-
-          <p className="text-[#3A3A3A] mb-4">{getPetMood()}</p>
+          </div>          <p className="mb-4" style={{ color: theme.colors.textPrimary }}>{getPetMood()}</p>
 
           {/* Points Display */}
-          <div className="mb-4 p-3 bg-[#F0EDE8] rounded-lg">
+          <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: theme.colors.borderLight }}>
             <div className="text-center">
-              <div className="text-2xl font-bold text-[#D2691E] mb-1">💰 {pet.points}</div>
-              <p className="text-sm text-[#8B7355]">Care Points (Earned from reading)</p>
+              <div className="text-2xl font-bold mb-1" style={{ color: theme.colors.primary }}>💰 {pet.points}</div>
+              <p className="text-sm" style={{ color: theme.colors.textSecondary }}>Care Points (Earned from reading)</p>
             </div>
           </div>
 
           {/* XP Bar */}
           <div className="mb-6">
-            <div className="flex items-center justify-between text-sm text-[#8B7355] mb-2">
+            <div className="flex items-center justify-between text-sm mb-2" style={{ color: theme.colors.textSecondary }}>
               <span>Experience</span>
               <span>{pet.experience}/{pet.experienceToNext}</span>
             </div>
-            <div className="h-3 bg-[#F0EDE8] rounded-full overflow-hidden">
+            <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: theme.colors.borderLight }}>
               <div 
                 className="h-full bg-gradient-to-r from-[#D2691E] to-[#FF8C00] rounded-full transition-all duration-300"
                 style={{ width: `${(pet.experience / pet.experienceToNext) * 100}%` }}
@@ -200,11 +206,9 @@ const PetPage: React.FC = () => {
               <span className="text-xs">Free</span>
             </button>
           </div>
-        </div>
-
-        {/* Stats */}
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <h3 className="font-serif text-lg font-medium text-[#3A3A3A] mb-4">Pet Stats</h3>
+        </div>        {/* Stats */}
+        <div className="rounded-xl shadow-sm p-4" style={{ backgroundColor: theme.colors.surface }}>
+          <h3 className="font-serif text-lg font-medium mb-4" style={{ color: theme.colors.textPrimary }}>Pet Stats</h3>
           
           <div className="space-y-4">
             <div>
@@ -212,10 +216,9 @@ const PetPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Heart className="w-4 h-4 text-red-500" />
                   <span>Happiness</span>
-                </div>
-                <span>{pet.happiness}/100</span>
+                </div>                <span>{pet.happiness}/100</span>
               </div>
-              <div className="h-3 bg-[#F0EDE8] rounded-full overflow-hidden">
+              <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: theme.colors.borderLight }}>
                 <div 
                   className={`h-full ${getStatColor(pet.happiness)} rounded-full transition-all duration-300`}
                   style={{ width: getStatBarWidth(pet.happiness) }}
@@ -228,10 +231,9 @@ const PetPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Apple className="w-4 h-4 text-green-500" />
                   <span>Hunger</span>
-                </div>
-                <span>{pet.hunger}/100</span>
+                </div>                <span>{pet.hunger}/100</span>
               </div>
-              <div className="h-3 bg-[#F0EDE8] rounded-full overflow-hidden">
+              <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: theme.colors.borderLight }}>
                 <div 
                   className={`h-full ${getStatColor(pet.hunger)} rounded-full transition-all duration-300`}
                   style={{ width: getStatBarWidth(pet.hunger) }}
@@ -244,10 +246,9 @@ const PetPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Zap className="w-4 h-4 text-blue-500" />
                   <span>Energy</span>
-                </div>
-                <span>{pet.energy}/100</span>
+                </div>                <span>{pet.energy}/100</span>
               </div>
-              <div className="h-3 bg-[#F0EDE8] rounded-full overflow-hidden">
+              <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: theme.colors.borderLight }}>
                 <div 
                   className={`h-full ${getStatColor(pet.energy)} rounded-full transition-all duration-300`}
                   style={{ width: getStatBarWidth(pet.energy) }}
@@ -271,49 +272,45 @@ const PetPage: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Reading Stats */}
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <h3 className="font-serif text-lg font-medium text-[#3A3A3A] mb-4">Reading Progress</h3>
+        </div>        {/* Reading Stats */}
+        <div className="rounded-xl shadow-sm p-4" style={{ backgroundColor: theme.colors.surface }}>
+          <h3 className="font-serif text-lg font-medium mb-4" style={{ color: theme.colors.textPrimary }}>Reading Progress</h3>
           
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-[#D2691E]">{pet.totalBooksRead}</div>
-              <div className="text-sm text-[#8B7355]">Books Read</div>
+          <div className="grid grid-cols-2 gap-4">            <div className="text-center">
+              <div className="text-2xl font-bold" style={{ color: theme.colors.primary }}>{pet.totalBooksRead}</div>
+              <div className="text-sm" style={{ color: theme.colors.textSecondary }}>Books Read</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-[#D2691E]">{formatTime(pet.totalReadingTime)}</div>
-              <div className="text-sm text-[#8B7355]">Total Time</div>
+              <div className="text-2xl font-bold" style={{ color: theme.colors.primary }}>{formatTime(pet.totalReadingTime)}</div>
+              <div className="text-sm" style={{ color: theme.colors.textSecondary }}>Total Time</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-[#D2691E]">{petStats.booksReadToday}</div>
-              <div className="text-sm text-[#8B7355]">Today's Books</div>
+              <div className="text-2xl font-bold" style={{ color: theme.colors.primary }}>{petStats.booksReadToday}</div>
+              <div className="text-sm" style={{ color: theme.colors.textSecondary }}>Today's Books</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-[#D2691E]">{formatTime(petStats.readingTimeToday)}</div>
-              <div className="text-sm text-[#8B7355]">Today's Time</div>
+              <div className="text-2xl font-bold" style={{ color: theme.colors.primary }}>{formatTime(petStats.readingTimeToday)}</div>
+              <div className="text-sm" style={{ color: theme.colors.textSecondary }}>Today's Time</div>
             </div>
           </div>
-        </div>
-
-        {/* Badges */}
+        </div>        {/* Badges */}
         {pet.badges.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm p-4">
-            <h3 className="font-serif text-lg font-medium text-[#3A3A3A] mb-4">Achievements</h3>
+          <div className="rounded-xl shadow-sm p-4" style={{ backgroundColor: theme.colors.surface }}>
+            <h3 className="font-serif text-lg font-medium mb-4" style={{ color: theme.colors.textPrimary }}>Achievements</h3>
             
             <div className="grid grid-cols-2 gap-3">
               {pet.badges.map((badge, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-3 p-3 bg-[#F0EDE8] rounded-lg"
+                  className="flex items-center gap-3 p-3 rounded-lg"
+                  style={{ backgroundColor: theme.colors.borderLight }}
                 >
                   <div className="text-2xl">{getBadgeEmoji(badge)}</div>
                   <div>
-                    <div className="font-medium text-[#3A3A3A] capitalize text-sm">
+                    <div className="font-medium capitalize text-sm" style={{ color: theme.colors.textPrimary }}>
                       {badge.replace('-', ' ')}
                     </div>
-                    <div className="text-xs text-[#8B7355]">
+                    <div className="text-xs" style={{ color: theme.colors.textSecondary }}>
                       {getBadgeDescription(badge)}
                     </div>
                   </div>
@@ -324,9 +321,9 @@ const PetPage: React.FC = () => {
         )}
 
         {/* Reset Pet */}
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <h3 className="font-serif text-lg font-medium text-[#3A3A3A] mb-2">Pet Management</h3>
-          <p className="text-sm text-[#8B7355] mb-4">
+        <div className="rounded-xl shadow-sm p-4" style={{ backgroundColor: theme.colors.surface }}>
+          <h3 className="font-serif text-lg font-medium mb-2" style={{ color: theme.colors.textPrimary }}>Pet Management</h3>
+          <p className="text-sm mb-4" style={{ color: theme.colors.textSecondary }}>
             Reset your pet to start over with a new companion. This action cannot be undone.
           </p>
           

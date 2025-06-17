@@ -7,9 +7,11 @@ import ReadingStats from '../components/reading/ReadingStats';
 import ActionButton from '../components/ui/ActionButton';
 import ActivityItem from '../components/layout/ActivityItem';
 import { getSessions } from '../services/storage';
+import { useTheme } from '../context/ThemeContext';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const sessions = getSessions();
   
   // Sort sessions by start time (most recent first)
@@ -23,16 +25,23 @@ const HomePage: React.FC = () => {
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
   };
-  
-  return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#F7F5F3] pb-6">
+    return (
+    <div 
+      className="max-w-md mx-auto min-h-screen pb-6"
+      style={{ backgroundColor: theme.colors.background }}
+    >
       <Header greeting={getGreeting()} />
       
       <main className="px-4 py-2 space-y-6">
         <CurrentlyReading onContinueReading={() => navigate('/reading')} />
         
         <section>
-          <h2 className="font-serif text-lg font-medium text-[#3A3A3A] mb-3">Quick Actions</h2>
+          <h2 
+            className="font-serif text-lg font-medium mb-3"
+            style={{ color: theme.colors.textPrimary }}
+          >
+            Quick Actions
+          </h2>
           <div className="grid grid-cols-2 gap-3">
             <ActionButton 
               icon={Search} 
@@ -58,15 +67,28 @@ const HomePage: React.FC = () => {
         </section>
         
         <section>
-          <h2 className="font-serif text-lg font-medium text-[#3A3A3A] mb-3">Your Progress</h2>
+          <h2 
+            className="font-serif text-lg font-medium mb-3"
+            style={{ color: theme.colors.textPrimary }}
+          >
+            Your Progress
+          </h2>
           <ReadingStats />
         </section>
         
         <section>
-          <h2 className="font-serif text-lg font-medium text-[#3A3A3A] mb-1">Recent Activity</h2>
+          <h2 
+            className="font-serif text-lg font-medium mb-1"
+            style={{ color: theme.colors.textPrimary }}
+          >
+            Recent Activity
+          </h2>
           
           {recentSessions.length > 0 ? (
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div 
+              className="rounded-xl shadow-sm overflow-hidden"
+              style={{ backgroundColor: theme.colors.surface }}
+            >
               {recentSessions.map(session => (
                 <ActivityItem 
                   key={session.id}
@@ -78,7 +100,13 @@ const HomePage: React.FC = () => {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-[#8B7355] p-4 bg-white rounded-xl shadow-sm">
+            <p 
+              className="text-sm p-4 rounded-xl shadow-sm"
+              style={{ 
+                color: theme.colors.textSecondary,
+                backgroundColor: theme.colors.surface
+              }}
+            >
               No recent activity. Start reading to track your progress!
             </p>
           )}
@@ -87,7 +115,16 @@ const HomePage: React.FC = () => {
         <section className="text-center py-4">
           <button
             onClick={() => navigate('/welcome')}
-            className="text-sm text-[#8B7355] hover:text-[#3A3A3A] transition-colors underline"
+            className="text-sm hover:underline transition-colors underline"
+            style={{ 
+              color: theme.colors.textSecondary,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = theme.colors.textPrimary;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = theme.colors.textSecondary;
+            }}
           >
             Learn more about Bookish features
           </button>

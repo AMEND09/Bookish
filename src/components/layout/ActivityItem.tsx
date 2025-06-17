@@ -1,5 +1,6 @@
 import React from 'react';
 import { Book, Clock } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 interface ActivityItemProps {
   type: 'reading' | 'note' | 'completed';
@@ -9,14 +10,16 @@ interface ActivityItemProps {
 }
 
 const ActivityItem: React.FC<ActivityItemProps> = ({ type, title, timestamp, duration }) => {
+  const { theme } = useTheme();
+  
   const getIcon = () => {
     switch (type) {
       case 'reading':
-        return <Clock className="w-4 h-4 text-[#E59554]" />;
+        return <Clock className="w-4 h-4" style={{ color: theme.colors.primary }} />;
       case 'note':
-        return <Book className="w-4 h-4 text-[#8B7355]" />;
+        return <Book className="w-4 h-4" style={{ color: theme.colors.secondary }} />;
       case 'completed':
-        return <Book className="w-4 h-4 text-[#D2691E]" />;
+        return <Book className="w-4 h-4" style={{ color: theme.colors.success }} />;
     }
   };
   
@@ -42,16 +45,29 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ type, title, timestamp, dur
     const diffInDays = Math.floor(diffInHours / 24);
     return `${diffInDays} day${diffInDays === 1 ? '' : 's'} ago`;
   };
-  
-  return (
-    <div className="flex items-center gap-3 p-3 border-b border-[#F0EDE8]">
-      <div className="w-8 h-8 rounded-full bg-[#F7F5F3] flex items-center justify-center flex-shrink-0">
+    return (
+    <div 
+      className="flex items-center gap-3 p-3 border-b"
+      style={{ borderColor: theme.colors.border }}
+    >
+      <div 
+        className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+        style={{ backgroundColor: theme.colors.surfaceSecondary }}
+      >
         {getIcon()}
       </div>
       
       <div className="flex-1">
-        <h4 className="text-sm font-medium text-[#3A3A3A]">{title}</h4>
-        <div className="flex items-center gap-2 text-xs text-[#8B7355]">
+        <h4 
+          className="text-sm font-medium"
+          style={{ color: theme.colors.textPrimary }}
+        >
+          {title}
+        </h4>
+        <div 
+          className="flex items-center gap-2 text-xs"
+          style={{ color: theme.colors.textSecondary }}
+        >
           <span>{getTimeAgo(timestamp)}</span>
           {duration && (
             <>

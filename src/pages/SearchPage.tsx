@@ -3,9 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, BookOpen, Camera, X, Hash } from 'lucide-react';
 import { searchBooks, searchBooksBySubject, searchBookByISBN } from '../services/api';
 import { Book } from '../types';
+import { useTheme } from '../context/ThemeContext';
+import Layout from '../components/Layout';
 
 const SearchPage: React.FC = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Book[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -208,62 +211,86 @@ const SearchPage: React.FC = () => {
       }
     });
   };
-  
-  return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#F7F5F3] pb-6">
-      <header className="page-header p-4 bg-[#F0EDE8] shadow-sm">
-        <div className="flex items-center gap-3 mb-3">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F7F5F3] transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-[#8B7355]" />
-          </button>
-          
-          <form onSubmit={handleSearch} className="flex-1 relative">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={searchType === 'subject' ? "Search by subject (e.g. science, fiction)..." : "Search for books..."}
-              className="w-full py-2 px-4 pr-10 bg-white border border-[#E5E5E5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E59554] text-[#3A3A3A]"
-            />
+    return (
+    <Layout>
+      <div className="max-w-md mx-auto min-h-screen pb-6">
+        <header 
+          className="page-header p-4 shadow-sm"
+          style={{ backgroundColor: theme.colors.surfaceSecondary }}
+        >
+          <div className="flex items-center gap-3 mb-3">
             <button
-              type="submit"
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-[#E59554] text-white"
+              onClick={() => navigate(-1)}
+              className="w-8 h-8 flex items-center justify-center rounded-full transition-colors"
+              style={{ backgroundColor: theme.colors.surface }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = theme.colors.surfaceSecondary;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = theme.colors.surface;
+              }}
             >
-              <Search className="w-4 h-4" />
+              <ArrowLeft 
+                className="w-5 h-5" 
+                style={{ color: theme.colors.textSecondary }}
+              />
             </button>
-          </form>
-          
-          <button
-            onClick={startCamera}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-[#E59554] text-white hover:bg-[#D2691E] transition-colors"
-          >
-            <Camera className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Search Type Toggle */}
-        <div className="flex bg-white rounded-lg p-1">
+            
+            <form onSubmit={handleSearch} className="flex-1 relative">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={searchType === 'subject' ? "Search by subject (e.g. science, fiction)..." : "Search for books..."}
+                className="w-full py-2 px-4 pr-10 border rounded-lg focus:outline-none focus:ring-2 input-field"
+                style={{
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border,
+                  color: theme.colors.textPrimary
+                }}
+              />
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-white"
+                style={{ backgroundColor: theme.colors.primary }}
+              >
+                <Search className="w-4 h-4" />
+              </button>
+            </form>
+            
+            <button
+              onClick={startCamera}
+              className="w-10 h-10 flex items-center justify-center rounded-full text-white transition-colors"
+              style={{ backgroundColor: theme.colors.primary }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = theme.colors.primaryLight;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = theme.colors.primary;
+              }}
+            >
+              <Camera className="w-5 h-5" />
+            </button>
+          </div>        {/* Search Type Toggle */}
+        <div className="flex rounded-lg p-1" style={{ backgroundColor: theme.colors.surface }}>
           <button
             onClick={() => setSearchType('general')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-              searchType === 'general' 
-                ? 'bg-[#E59554] text-white' 
-                : 'text-[#8B7355] hover:bg-[#F7F5F3]'
-            }`}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors`}
+            style={{
+              backgroundColor: searchType === 'general' ? theme.colors.primary : 'transparent',
+              color: searchType === 'general' ? 'white' : theme.colors.textSecondary
+            }}
           >
             <Search className="w-4 h-4" />
             General
           </button>
           <button
             onClick={() => setSearchType('subject')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-              searchType === 'subject' 
-                ? 'bg-[#E59554] text-white' 
-                : 'text-[#8B7355] hover:bg-[#F7F5F3]'
-            }`}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors`}
+            style={{
+              backgroundColor: searchType === 'subject' ? theme.colors.primary : 'transparent',
+              color: searchType === 'subject' ? 'white' : theme.colors.textSecondary
+            }}
           >
             <Hash className="w-4 h-4" />
             Subject
@@ -274,14 +301,15 @@ const SearchPage: React.FC = () => {
       {/* Camera Modal */}
       {showCamera && (
         <div className="modal-overlay fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-4 m-4 max-w-sm w-full">
+          <div className="rounded-lg p-4 m-4 max-w-sm w-full" style={{ backgroundColor: theme.colors.surface }}>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-serif text-lg font-medium text-[#3A3A3A]">Scan ISBN Barcode</h3>
+              <h3 className="font-serif text-lg font-medium" style={{ color: theme.colors.textPrimary }}>Scan ISBN Barcode</h3>
               <button
                 onClick={stopCamera}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F7F5F3] transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-full transition-colors hover:opacity-80"
+                style={{ backgroundColor: theme.colors.borderLight, color: theme.colors.textSecondary }}
               >
-                <X className="w-5 h-5 text-[#8B7355]" />
+                <X className="w-5 h-5" />
               </button>
             </div>
             
@@ -297,29 +325,28 @@ const SearchPage: React.FC = () => {
                     <div className="text-xs mt-1">Make sure to allow camera access</div>
                   </div>
                 </div>
-              </div>
-              
+              </div>              
               {/* Scanning overlay */}
-              <div className="absolute inset-0 border-2 border-[#E59554] rounded-lg pointer-events-none">
+              <div className="absolute inset-0 rounded-lg pointer-events-none" style={{ border: `2px solid ${theme.colors.primary}` }}>
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-16 border-2 border-white rounded">
-                  <div className="absolute inset-0 border-t-2 border-[#E59554] animate-pulse"></div>
+                  <div className="absolute inset-0 animate-pulse" style={{ borderTop: `2px solid ${theme.colors.primary}` }}></div>
                 </div>
               </div>
             </div>
             
             <div className="mt-4 text-center">
-              <p className="text-sm text-[#8B7355] mb-2">
+              <p className="text-sm mb-2" style={{ color: theme.colors.textSecondary }}>
                 Point camera at book's barcode
               </p>
-              <p className="text-xs text-[#8B7355] mb-2">
+              <p className="text-xs mb-2" style={{ color: theme.colors.textSecondary }}>
                 Hold steady and ensure good lighting
               </p>
-              <p className="text-xs text-[#8B7355] italic">
+              <p className="text-xs italic" style={{ color: theme.colors.textSecondary }}>
                 Looking for ISBN-13 barcodes (978...)
               </p>
               
               {/* Manual input fallback */}
-              <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="mt-4 pt-4" style={{ borderTop: `1px solid ${theme.colors.border}` }}>
                 <button
                   onClick={() => {
                     const isbn = prompt('Enter ISBN manually (if barcode scan fails):');
@@ -328,7 +355,8 @@ const SearchPage: React.FC = () => {
                       stopCamera();
                     }
                   }}
-                  className="text-xs text-[#E59554] underline"
+                  className="text-xs underline"
+                  style={{ color: theme.colors.primary }}
                 >
                   Enter ISBN manually
                 </button>
@@ -341,22 +369,22 @@ const SearchPage: React.FC = () => {
       <main className="px-4 py-4">
         {isSearching ? (
           <div className="flex items-center justify-center p-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#E59554]"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style={{ borderTopColor: theme.colors.primary, borderBottomColor: theme.colors.primary }}></div>
           </div>
         ) : results.length > 0 ? (
           <div className="space-y-4">
-            <h2 className="font-serif text-lg font-medium text-[#3A3A3A]">
+            <h2 className="font-serif text-lg font-medium" style={{ color: theme.colors.textPrimary }}>
               {searchType === 'subject' ? 'Books in Subject' : 'Search Results'}
-            </h2>
-            
+            </h2>            
             <div className="space-y-3">
               {results.map((book) => (
                 <div
                   key={book.key}
                   onClick={() => handleBookSelect(book)}
-                  className="flex gap-4 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                  className="flex gap-4 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                  style={{ backgroundColor: theme.colors.surface }}
                 >
-                  <div className="w-12 h-16 bg-[#F0EDE8] rounded flex-shrink-0 overflow-hidden">
+                  <div className="w-12 h-16 rounded flex-shrink-0 overflow-hidden" style={{ backgroundColor: theme.colors.borderLight }}>
                     {book.cover_i ? (
                       <img
                         src={`https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`}
@@ -370,21 +398,21 @@ const SearchPage: React.FC = () => {
                       />
                     ) : null}
                     <div className={`w-full h-full flex items-center justify-center ${book.cover_i ? 'hidden' : ''}`}>
-                      <BookOpen className="w-6 h-6 text-[#8B7355]" />
+                      <BookOpen className="w-6 h-6" style={{ color: theme.colors.textSecondary }} />
                     </div>
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-serif font-medium text-[#3A3A3A] text-sm leading-tight mb-1 truncate">
+                    <h3 className="font-serif font-medium text-sm leading-tight mb-1 truncate" style={{ color: theme.colors.textPrimary }}>
                       {book.title}
                     </h3>
                     {book.author_name && (
-                      <p className="text-xs text-[#8B7355] mb-2 truncate">
+                      <p className="text-xs mb-2 truncate" style={{ color: theme.colors.textSecondary }}>
                         by {book.author_name[0]}
                       </p>
                     )}
                     {book.first_publish_year && (
-                      <p className="text-xs text-[#8B7355]">{book.first_publish_year}</p>
+                      <p className="text-xs" style={{ color: theme.colors.textSecondary }}>{book.first_publish_year}</p>
                     )}
                   </div>
                 </div>
@@ -393,12 +421,12 @@ const SearchPage: React.FC = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-            <Search className="w-12 h-12 text-[#8B7355] mb-4 opacity-70" />
-            <h2 className="font-serif text-lg font-medium text-[#3A3A3A] mb-2">Find your next great read</h2>
-            <p className="text-sm text-[#8B7355] max-w-xs mb-4">
+            <Search className="w-12 h-12 mb-4 opacity-70" style={{ color: theme.colors.textSecondary }} />
+            <h2 className="font-serif text-lg font-medium mb-2" style={{ color: theme.colors.textPrimary }}>Find your next great read</h2>
+            <p className="text-sm max-w-xs mb-4" style={{ color: theme.colors.textSecondary }}>
               Search for books by title, author, ISBN, or browse by subject. You can also scan a barcode!
             </p>
-            <div className="flex items-center justify-center gap-4 text-xs text-[#8B7355]">
+            <div className="flex items-center justify-center gap-4 text-xs" style={{ color: theme.colors.textSecondary }}>
               <div className="flex items-center gap-1">
                 <Camera className="w-4 h-4" />
                 Scan
@@ -412,10 +440,10 @@ const SearchPage: React.FC = () => {
                 Browse
               </div>
             </div>
-          </div>
-        )}
+          </div>        )}
       </main>
-    </div>
+      </div>
+    </Layout>
   );
 };
 

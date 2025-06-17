@@ -3,14 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Clock, MoreVertical, Trash2, Check, Move } from 'lucide-react';
 import { useBooks } from '../context/BookContext';
 import { usePet } from '../context/PetContext';
+import { useTheme } from '../context/ThemeContext';
 import { getSessionsByBook } from '../services/storage';
 import ConfirmationModal from '../components/ui/ConfirmationModal';
 import { useConfirmationModal } from '../hooks/useConfirmationModal';
+import Layout from '../components/Layout';
 
 const LibraryPage: React.FC = () => {
   const navigate = useNavigate();
   const { books } = useBooks();
   const { updatePetFromBookCompletion } = usePet();
+  const { theme } = useTheme();
   const modal = useConfirmationModal();const [showDropdown, setShowDropdown] = useState<string | null>(null);
   const [showMoveModal, setShowMoveModal] = useState<string | null>(null);
   const [swipeStates, setSwipeStates] = useState<Record<string, { translateX: number; isDeleting: boolean; startX?: number; startY?: number }>>({});
@@ -265,11 +268,11 @@ const LibraryPage: React.FC = () => {
         [book.key]: { translateX: 0, isDeleting: false }
       }));
     };
-      return (
-      <div
+      return (      <div
         key={book.key}
-        className="bg-white rounded-xl shadow-sm cursor-pointer hover:shadow-md transition-shadow relative"
+        className="rounded-xl shadow-sm cursor-pointer hover:shadow-md transition-shadow relative"
         style={{
+          backgroundColor: theme.colors.surface,
           transform: `translateX(${swipeState.translateX}px)`,
           transition: swipeState.isDeleting || swipeState.translateX === 0 ? 'transform 0.3s ease' : 'none',
           overflow: swipeState.isDeleting ? 'hidden' : 'visible'
@@ -278,8 +281,7 @@ const LibraryPage: React.FC = () => {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <div className="flex gap-3 p-4" onClick={() => !swipeState.isDeleting && handleBookClick(book)}>
-          <div className="w-12 h-16 bg-[#F0EDE8] rounded flex-shrink-0 flex items-center justify-center">
+        <div className="flex gap-3 p-4" onClick={() => !swipeState.isDeleting && handleBookClick(book)}>          <div className="w-12 h-16 rounded flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: theme.colors.borderLight }}>
             {book.cover_i ? (
               <img
                 src={`https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`}
@@ -292,15 +294,15 @@ const LibraryPage: React.FC = () => {
                 }}
               />
             ) : null}
-            <BookOpen className={`w-6 h-6 text-[#8B7355] ${book.cover_i ? 'hidden' : ''}`} />
+            <BookOpen className={`w-6 h-6 ${book.cover_i ? 'hidden' : ''}`} style={{ color: theme.colors.textSecondary }} />
           </div>
           
           <div className="flex-1 min-w-0">
-            <h3 className="font-serif font-medium text-[#3A3A3A] text-sm leading-tight mb-1 truncate">
+            <h3 className="font-serif font-medium text-sm leading-tight mb-1 truncate" style={{ color: theme.colors.textPrimary }}>
               {book.title}
             </h3>
             {book.author_name && (
-              <p className="text-xs text-[#8B7355] mb-2 truncate">
+              <p className="text-xs mb-2 truncate" style={{ color: theme.colors.textSecondary }}>
                 by {book.author_name[0]}
               </p>
             )}
@@ -308,13 +310,16 @@ const LibraryPage: React.FC = () => {
             {progress > 0 && progress < 100 && (
               <div className="mb-2">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs text-[#8B7355]">Progress</span>
-                  <span className="text-xs text-[#8B7355]">{progress}%</span>
+                  <span className="text-xs" style={{ color: theme.colors.textSecondary }}>Progress</span>
+                  <span className="text-xs" style={{ color: theme.colors.textSecondary }}>{progress}%</span>
                 </div>
-                <div className="w-full bg-[#F0EDE8] rounded-full h-1.5">
+                <div className="w-full rounded-full h-1.5" style={{ backgroundColor: theme.colors.borderLight }}>
                   <div
-                    className="bg-[#8B7355] h-1.5 rounded-full transition-all duration-300"
-                    style={{ width: `${progress}%` }}
+                    className="h-1.5 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${progress}%`,
+                      backgroundColor: theme.colors.secondary
+                    }}
                   />
                 </div>
               </div>
@@ -328,30 +333,39 @@ const LibraryPage: React.FC = () => {
             )}
             
             {readingTime > 0 && (
-              <div className="flex items-center gap-1 text-xs text-[#8B7355]">
+              <div className="flex items-center gap-1 text-xs" style={{ color: theme.colors.textSecondary }}>
                 <Clock className="w-3 h-3" />
                 <span>{formatTime(readingTime)} read</span>
               </div>
             )}
           </div>
         </div>
-        
-        {!swipeState.isDeleting && (
+          {!swipeState.isDeleting && (
           <button
             onClick={(e) => handleDropdownToggle(book.key, e)}
-            className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[#F0EDE8] flex items-center justify-center hover:bg-[#E8E3DD] transition-colors"
+            className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center transition-colors hover:opacity-80"
+            style={{ backgroundColor: theme.colors.borderLight }}
           >
-            <MoreVertical className="w-4 h-4 text-[#8B7355]" />
+            <MoreVertical className="w-4 h-4" style={{ color: theme.colors.textSecondary }} />
           </button>
         )}        {showDropdown === book.key && !swipeState.isDeleting && (
-          <div className="absolute top-10 right-3 bg-white rounded-lg shadow-lg border border-[#E8E3DD] py-1 z-50 min-w-[180px]">
+          <div className="absolute top-10 right-3 rounded-lg shadow-lg py-1 z-50 min-w-[180px]" style={{ 
+            backgroundColor: theme.colors.surface,
+            border: `1px solid ${theme.colors.border}`
+          }}>
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setShowMoveModal(book.key);
                 setShowDropdown(null);
               }}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-[#8B7355] hover:bg-[#F0EDE8] w-full text-left"
+              className="flex items-center gap-2 px-3 py-2 text-sm w-full text-left transition-colors hover:opacity-80"
+              style={{ 
+                color: theme.colors.textSecondary,
+                backgroundColor: 'transparent'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = theme.colors.borderLight}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <Move className="w-4 h-4" />
               Move to category
@@ -378,10 +392,10 @@ const LibraryPage: React.FC = () => {
         {/* Delete confirmation overlay */}
         {swipeState.isDeleting && (
           <div className="absolute inset-0 bg-red-500 flex items-center justify-end pr-4">
-            <div className="flex gap-2">
-              <button
+            <div className="flex gap-2">              <button
                 onClick={cancelDelete}
-                className="px-3 py-1 text-xs bg-white text-red-500 rounded"
+                className="px-3 py-1 text-xs text-red-500 rounded"
+                style={{ backgroundColor: theme.colors.surface }}
               >
                 Cancel
               </button>
@@ -402,10 +416,9 @@ const LibraryPage: React.FC = () => {
     if (books.length === 0) return null;
     
     return (
-      <div className="mb-8">
-        <h2 className="font-serif text-lg font-medium text-[#3A3A3A] mb-4 flex items-center gap-2">
+      <div className="mb-8">        <h2 className="font-serif text-lg font-medium mb-4 flex items-center gap-2" style={{ color: theme.colors.textPrimary }}>
           {title}
-          <span className="text-sm text-[#8B7355] font-normal">({books.length})</span>
+          <span className="text-sm font-normal" style={{ color: theme.colors.textSecondary }}>({books.length})</span>
         </h2>
         <div className="space-y-3">
           {books.map(renderBookCard)}
@@ -413,30 +426,50 @@ const LibraryPage: React.FC = () => {
       </div>
     );
   };
-
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#F7F5F3]">
-      <header className="p-4 bg-[#F7F5F3] border-b border-[#E8E3DD]">
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => navigate('/')}
-            className="w-8 h-8 rounded-full bg-[#F0EDE8] flex items-center justify-center"
-          >
-            <ArrowLeft className="w-5 h-5 text-[#8B7355]" />
-          </button>
-          <h1 className="font-serif text-xl font-medium text-[#3A3A3A]">My Library</h1>
-        </div>
-      </header>      <main className="p-4">
-        {displayBooks.length === 0 ? (
-          <div className="text-center py-12">
-            <BookOpen className="w-16 h-16 text-[#8B7355] mx-auto mb-4" />
-            <h2 className="font-serif text-lg font-medium text-[#3A3A3A] mb-2">No books yet</h2>
-            <p className="text-sm text-[#8B7355] mb-6">
+    <Layout>
+      <div className="max-w-md mx-auto min-h-screen">
+        <header 
+          className="p-4 border-b"
+          style={{ 
+            backgroundColor: theme.colors.background,
+            borderColor: theme.colors.border 
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => navigate('/')}
+              className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: theme.colors.surfaceSecondary }}
+            >
+              <ArrowLeft 
+                className="w-5 h-5" 
+                style={{ color: theme.colors.textSecondary }}
+              />
+            </button>
+            <h1 
+              className="font-serif text-xl font-medium"
+              style={{ color: theme.colors.textPrimary }}
+            >
+              My Library
+            </h1>
+          </div>
+        </header>
+
+        <main className="p-4">
+          {displayBooks.length === 0 ? (
+            <div className="text-center py-12">
+              <BookOpen 
+                className="w-16 h-16 mx-auto mb-4" 
+                style={{ color: theme.colors.textSecondary }}
+              />            <h2 className="font-serif text-lg font-medium mb-2" style={{ color: theme.colors.textPrimary }}>No books yet</h2>
+            <p className="text-sm mb-6" style={{ color: theme.colors.textSecondary }}>
               Start building your library by searching for books to read
             </p>
             <button
               onClick={() => navigate('/search')}
-              className="bg-[#8B7355] text-white px-6 py-3 rounded-xl font-medium"
+              className="px-6 py-3 rounded-xl font-medium text-white"
+              style={{ backgroundColor: theme.colors.secondary }}
             >
               Find Books
             </button>
@@ -444,7 +477,7 @@ const LibraryPage: React.FC = () => {
         ) : (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <p className="text-sm text-[#8B7355]">{displayBooks.length} book{displayBooks.length !== 1 ? 's' : ''} in your library</p>
+              <p className="text-sm" style={{ color: theme.colors.textSecondary }}>{displayBooks.length} book{displayBooks.length !== 1 ? 's' : ''} in your library</p>
             </div>
             
             {(() => {
@@ -463,48 +496,48 @@ const LibraryPage: React.FC = () => {
 
       {/* Move Category Modal */}
       {showMoveModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
-            <h3 className="font-serif text-lg font-medium text-[#3A3A3A] mb-4">Move Book</h3>
-            <p className="text-sm text-[#8B7355] mb-6">Choose a new category:</p>
-            
-            <div className="space-y-3">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">          <div className="rounded-xl p-6 w-full max-w-sm" style={{ backgroundColor: theme.colors.surface }}>
+            <h3 className="font-serif text-lg font-medium mb-4" style={{ color: theme.colors.textPrimary }}>Move Book</h3>
+            <p className="text-sm mb-6" style={{ color: theme.colors.textSecondary }}>Choose a new category:</p>
+              <div className="space-y-3">
               <button
                 onClick={() => handleMoveBook(showMoveModal, 'want-to-read')}
-                className="w-full p-3 bg-[#F0EDE8] rounded-lg text-left hover:bg-[#E8E3DD] transition-colors"
+                className="w-full p-3 rounded-lg text-left transition-colors hover:opacity-80"
+                style={{ backgroundColor: theme.colors.borderLight }}
               >
-                <div className="font-medium text-[#3A3A3A]">Want to Read</div>
-                <div className="text-xs text-[#8B7355]">Books you plan to read</div>
+                <div className="font-medium" style={{ color: theme.colors.textPrimary }}>Want to Read</div>
+                <div className="text-xs" style={{ color: theme.colors.textSecondary }}>Books you plan to read</div>
               </button>
               
               <button
                 onClick={() => handleMoveBook(showMoveModal, 'currently-reading')}
-                className="w-full p-3 bg-[#E8E3DD] rounded-lg text-left hover:bg-[#DDD8CE] transition-colors"
+                className="w-full p-3 rounded-lg text-left transition-colors hover:opacity-80"
+                style={{ backgroundColor: theme.colors.borderLight }}
               >
-                <div className="font-medium text-[#3A3A3A]">Currently Reading</div>
-                <div className="text-xs text-[#8B7355]">Books you're actively reading</div>
+                <div className="font-medium" style={{ color: theme.colors.textPrimary }}>Currently Reading</div>
+                <div className="text-xs" style={{ color: theme.colors.textSecondary }}>Books you're actively reading</div>
               </button>
               
               <button
                 onClick={() => handleMoveBook(showMoveModal, 'completed')}
                 className="w-full p-3 bg-green-50 rounded-lg text-left hover:bg-green-100 transition-colors"
               >
-                <div className="font-medium text-[#3A3A3A]">Completed</div>
+                <div className="font-medium" style={{ color: theme.colors.textPrimary }}>Completed</div>
                 <div className="text-xs text-green-600">Books you've finished</div>
               </button>
             </div>
             
             <button
               onClick={() => setShowMoveModal(null)}
-              className="w-full mt-4 py-2 text-sm text-[#8B7355] hover:text-[#3A3A3A] transition-colors"
+              className="w-full mt-4 py-2 text-sm transition-colors hover:opacity-80"
+              style={{ color: theme.colors.textSecondary }}
             >
               Cancel
             </button>          </div>
         </div>
       )}
 
-      {/* Confirmation Modal */}
-      <ConfirmationModal
+      {/* Confirmation Modal */}      <ConfirmationModal
         isOpen={modal.isOpen}
         onClose={modal.close}
         onConfirm={modal.onConfirm || undefined}
@@ -514,7 +547,8 @@ const LibraryPage: React.FC = () => {
         confirmText={modal.config.confirmText}
         cancelText={modal.config.cancelText}
       />
-    </div>
+      </div>
+    </Layout>
   );
 };
 

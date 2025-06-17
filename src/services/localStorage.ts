@@ -1,11 +1,14 @@
 // localStorage utility for guest user data persistence
 
+import { UserSettings } from '../types';
+
 export const LOCAL_STORAGE_KEYS = {
   GUEST_PROFILE: 'bookish-guest-profile',
   GUEST_BOOKS: 'bookish-guest-books',
   GUEST_READING_SESSIONS: 'bookish-guest-reading-sessions',
   GUEST_NOTES: 'bookish-guest-notes',
-  GUEST_PET: 'bookish-guest-pet'
+  GUEST_PET: 'bookish-guest-pet',
+  USER_SETTINGS: 'bookish-user-settings'
 } as const;
 
 export class LocalStorageService {
@@ -82,6 +85,17 @@ export class LocalStorageService {
   static setGuestPet(pet: any) {
     return this.set(LOCAL_STORAGE_KEYS.GUEST_PET, {
       ...pet,
+      lastUpdated: new Date().toISOString()
+    });
+  }
+  // User settings helpers
+  static getUserSettings(): UserSettings | null {
+    return this.get<UserSettings>(LOCAL_STORAGE_KEYS.USER_SETTINGS);
+  }
+
+  static saveUserSettings(settings: UserSettings) {
+    return this.set(LOCAL_STORAGE_KEYS.USER_SETTINGS, {
+      ...settings,
       lastUpdated: new Date().toISOString()
     });
   }
