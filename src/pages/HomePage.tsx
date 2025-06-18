@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, PenLine, Library, BarChart3} from 'lucide-react';
+import { Search, PenLine, Library, BarChart3, Users, Trophy} from 'lucide-react';
 import Header from '../components/layout/Header';
 import CurrentlyReading from '../components/books/CurrentlyReading';
 import ReadingStats from '../components/reading/ReadingStats';
@@ -62,6 +62,26 @@ const HomePage: React.FC = () => {
               icon={BarChart3} 
               label="Statistics" 
               onClick={() => navigate('/stats')} 
+            />          </div>
+        </section>
+        
+        <section>
+          <h2 
+            className="font-serif text-lg font-medium mb-3"
+            style={{ color: theme.colors.textPrimary }}
+          >
+            Social
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            <ActionButton 
+              icon={Users} 
+              label="Friends" 
+              onClick={() => navigate('/friends')} 
+            />
+            <ActionButton 
+              icon={Trophy} 
+              label="Leaderboard" 
+              onClick={() => navigate('/leaderboard')} 
             />
           </div>
         </section>

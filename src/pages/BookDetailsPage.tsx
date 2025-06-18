@@ -4,6 +4,7 @@ import { ArrowLeft, BookOpen, Timer, PenLine, PlayCircle, Plus, ChevronDown, Che
 import { getBookDetails } from '../services/api';
 import { getCachedBookDetails, cacheBookDetails } from '../services/storage';
 import { useBooks } from '../context/BookContext';
+import { useFriends } from '../context/FriendsContext';
 import { usePet } from '../context/PetContext';
 import { useTheme } from '../context/ThemeContext';
 import ConfirmationModal from '../components/ui/ConfirmationModal';
@@ -12,8 +13,8 @@ import { useConfirmationModal } from '../hooks/useConfirmationModal';
 const BookDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const location = useLocation();
-  const { books, setActiveBook, sessions, notes } = useBooks();
+  const location = useLocation();  const { books, setActiveBook, sessions, notes, addBook, updatePublicStatsAfterBookCompletion } = useBooks();
+  const { refreshLeaderboard } = useFriends();
   const { updatePetFromBookCompletion } = usePet();
   const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
@@ -109,17 +110,20 @@ const BookDetailsPage: React.FC = () => {
       </div>
     );
   }
-
-  const handleAddToLibrary = (category: 'want-to-read' | 'currently-reading') => {
+  const handleAddToLibrary = async (category: 'want-to-read' | 'currently-reading') => {
     const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
     
     if (!savedBooks.some((b: any) => b.key === currentBook.key)) {
       const bookWithCategory = {
         ...currentBook,
-        category,
+        category: category === 'want-to-read' ? 'wishlist' as const : 'reading' as const,
         dateAdded: new Date().toISOString()
       };
       
+      // Use BookContext's addBook method for consistency
+      await addBook(bookWithCategory);
+      
+      // Update localStorage for backward compatibility
       savedBooks.push(bookWithCategory);
       localStorage.setItem('bookish_books', JSON.stringify(savedBooks));
       
@@ -143,28 +147,42 @@ const BookDetailsPage: React.FC = () => {
       }
     }
   };
-
   const handleMarkAsCompleted = () => {
     modal.showConfirm(
       'Mark as Completed',
       'Mark this book as completed? This will give your pet a big experience boost!',
-      () => {
-        // Update book category in storage
+      async () => {        // Create updated book with completed status
+        const updatedBook = { 
+          ...currentBook, 
+          category: 'completed' as const, 
+          completedAt: new Date().toISOString() 
+        };
+          // Use BookContext's addBook method which will handle activity publishing and stats updating
+        await addBook(updatedBook);
+        
+        // Manually trigger stats update to ensure immediate refresh
+        await updatePublicStatsAfterBookCompletion();
+        
+        // Update localStorage for backward compatibility
         const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
         const updatedBooks = savedBooks.map((book: any) => 
-          book.key === currentBook.key ? { ...book, category: 'completed', completedAt: new Date().toISOString() } : book
+          book.key === currentBook.key ? updatedBook : book
         );
         localStorage.setItem('bookish_books', JSON.stringify(updatedBooks));
         
         // Also update old storage for backward compatibility
         const oldSavedBooks = JSON.parse(localStorage.getItem('myBooks') || '[]');
         const oldUpdatedBooks = oldSavedBooks.map((book: any) => 
-          book.key === currentBook.key ? { ...book, category: 'completed', completedAt: new Date().toISOString() } : book
+          book.key === currentBook.key ? updatedBook : book
         );
         localStorage.setItem('myBooks', JSON.stringify(oldUpdatedBooks));
-        
-        // Reward the pet for completing a book
+          // Reward the pet for completing a book
         updatePetFromBookCompletion();
+        
+        // Refresh leaderboard to show updated stats
+        setTimeout(() => {
+          refreshLeaderboard('week', 'books_read');
+        }, 1000);
         
         // Clear as active book if it was currently reading
         if (currentBook.key === (JSON.parse(localStorage.getItem('bookish_current_book') || 'null'))?.key) {

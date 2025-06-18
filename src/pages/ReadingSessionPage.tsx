@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Pause, Play, Check, X, Trophy } from 'lucide-react';
 import { useBooks } from '../context/BookContext';
+import { useFriends } from '../context/FriendsContext';
 import { usePet } from '../context/PetContext';
 import { useReadingTimer } from '../hooks/useReadingTimer';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,8 +13,8 @@ import { useConfirmationModal } from '../hooks/useConfirmationModal';
 import { useTheme } from '../context/ThemeContext';
 
 const ReadingSessionPage: React.FC = () => {
-  const navigate = useNavigate();
-  const { currentBook, addSession, addNote } = useBooks();
+  const navigate = useNavigate();  const { currentBook, addSession, addNote, addBook, updatePublicStatsAfterBookCompletion } = useBooks();
+  const { refreshLeaderboard } = useFriends();
   const { updatePetFromReading } = usePet();
   const { theme } = useTheme();
   const modal = useConfirmationModal();
@@ -184,8 +185,7 @@ const ReadingSessionPage: React.FC = () => {
       setShowCompletionModal(true);
     }
   };
-
-  const handleMarkAsFinished = () => {
+  const handleMarkAsFinished = async () => {
     try {
       // Complete the reading session first
       const session = stopTimer(endPage);
@@ -211,11 +211,22 @@ const ReadingSessionPage: React.FC = () => {
         };
         addNote(note);
       }
+        // Create updated book with completed status
+      const updatedBook = { 
+        ...currentBook, 
+        category: 'completed' as const, 
+        completedAt: new Date().toISOString() 
+      };
+        // Use BookContext's addBook method which will handle activity publishing and stats updating
+      await addBook(updatedBook);
       
-      // Mark book as completed
+      // Manually trigger stats update to ensure immediate refresh
+      await updatePublicStatsAfterBookCompletion();
+      
+      // Update localStorage for backward compatibility
       const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
       const updatedBooks = savedBooks.map((book: any) => 
-        book.key === currentBook.key ? { ...book, category: 'completed', completedAt: new Date().toISOString() } : book
+        book.key === currentBook.key ? updatedBook : book
       );
       localStorage.setItem('bookish_books', JSON.stringify(updatedBooks));
       
@@ -228,9 +239,13 @@ const ReadingSessionPage: React.FC = () => {
       
       // Clear as active book
       localStorage.removeItem('bookish_current_book');
-      
-      // Reward the pet for completing a book
+        // Reward the pet for completing a book
       updatePetFromReading(session?.duration || 0, true); // Pass true for book completion
+      
+      // Refresh leaderboard to show updated stats
+      setTimeout(() => {
+        refreshLeaderboard('week', 'books_read');
+      }, 1000);
       
       modal.showAlert(
         'Congratulations!',

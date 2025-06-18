@@ -6,6 +6,9 @@ export interface Book {
   first_publish_year?: number;
   description?: string;
   number_of_pages_median?: number;
+  category?: 'reading' | 'completed' | 'wishlist';
+  completedAt?: string;
+  addedAt?: string;
 }
 
 export interface ReadingSession {
@@ -85,4 +88,69 @@ export interface AuthState {
   user: User | null;
   isLoading: boolean;
   error: string | null;
+}
+
+// Friend and Social Features
+export interface Friend {
+  id: string;
+  username: string;
+  displayName?: string;
+  avatar?: string;
+  status: 'pending' | 'accepted' | 'blocked';
+  addedAt: string;
+  stats?: {
+    totalBooksRead: number;
+    totalPagesRead: number;
+    totalReadingTime: number;
+    currentStreak: number;
+  };
+  recentActivity?: FriendActivity[];
+}
+
+export interface FriendActivity {
+  id: string;
+  userId: string;
+  username: string;
+  displayName?: string;
+  type: 'book_completed' | 'reading_session' | 'note_added' | 'achievement_unlocked';
+  title: string;
+  description: string;
+  timestamp: string;
+  bookTitle?: string;
+  bookCover?: string;
+  metadata?: {
+    pagesRead?: number;
+    duration?: number;
+    achievement?: string;
+  };
+}
+
+export interface LeaderboardEntry {
+  userId: string;
+  username: string;
+  displayName?: string;
+  avatar?: string;
+  rank: number;
+  score: number;
+  period: 'week' | 'month' | 'year' | 'alltime';
+  metric: 'books_read' | 'pages_read' | 'reading_time' | 'streak';
+  details?: {
+    booksRead?: number;
+    pagesRead?: number;
+    readingTime?: number;
+    currentStreak?: number;
+  };
+}
+
+export interface FriendRequest {
+  id: string;
+  fromUserId: string;
+  fromUsername: string;
+  fromDisplayName?: string;
+  toUserId: string;
+  toUsername?: string;
+  toDisplayName?: string;
+  status: 'pending' | 'accepted' | 'declined';
+  createdAt: string;
+  respondedAt?: string;
 }

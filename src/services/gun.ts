@@ -182,9 +182,12 @@ class GunService {
               joinedDate: new Date().toISOString(),
               lastUpdated: new Date().toISOString()
             };
-            
-            this.user.get('profile').put(initialProfile, () => {
+              this.user.get('profile').put(initialProfile, () => {
               console.log('🔫 GunJS: Initial profile created with original username');
+              
+              // Add user to public users index
+              this.addToPublicUsersIndex(username, username);
+              
               this.user.leave(); // Sign out after setup
             });
           }
@@ -211,7 +214,8 @@ class GunService {
           return;
         }
         console.log('🔫 GunJS: Sign in successful, user:', this.user.is);
-          // Check if the profile has originalUsername, if not, store it
+        
+        // Check if the profile has originalUsername, if not, store it
         this.user.get('profile').once((profile: any) => {
           if (!profile?.originalUsername) {
             console.log('🔫 GunJS: Storing original username in profile');
@@ -223,6 +227,9 @@ class GunService {
             };
             this.user.get('profile').put(updatedProfile);
           }
+          
+          // Add user to public users index on signin
+          this.addToPublicUsersIndex(username, profile?.displayName || username);
         });
         
         resolve({ 
@@ -535,6 +542,675 @@ class GunService {
 
     this.user.get(dataType).off();
   }
+
+  // User search and public profile methods
+  async addToPublicUsersIndex(username: string, displayName?: string): Promise<void> {
+    try {
+      if (!this.user.is) return;
+      
+      const userEntry = {
+        id: this.user.is.pub,
+        username: username,
+        displayName: displayName || username,
+        joinedAt: new Date().toISOString()
+      };
+      
+      // Add to public users index
+      this.gun.get('publicUsers').get(this.user.is.pub).put(userEntry);
+      
+      console.log('🔫 GunJS: Added user to public index:', userEntry);
+    } catch (err) {
+      console.error('🔫 GunJS: Error adding user to public index:', err);
+    }
+  }
+
+  async searchPublicUsers(query: string): Promise<{ id: string; username: string; displayName?: string }[]> {
+    return new Promise((resolve) => {
+      if (!query.trim()) {
+        resolve([]);
+        return;
+      }
+
+      const results: { id: string; username: string; displayName?: string }[] = [];
+      const timeout = setTimeout(() => {
+        console.log('🔫 GunJS: User search timed out');
+        resolve(results);
+      }, 5000);
+
+      try {
+        this.gun.get('publicUsers').map().on((userData: any) => {
+          if (userData && userData.username && userData.id) {
+            const matchesQuery = 
+              userData.username.toLowerCase().includes(query.toLowerCase()) ||
+              (userData.displayName && userData.displayName.toLowerCase().includes(query.toLowerCase()));
+            
+            if (matchesQuery && userData.id !== this.user.is?.pub) {
+              // Check if already in results
+              const existingIndex = results.findIndex(r => r.id === userData.id);
+              if (existingIndex === -1) {
+                results.push({
+                  id: userData.id,
+                  username: userData.username,
+                  displayName: userData.displayName
+                });
+              }
+            }
+          }
+        });
+
+        // Return results after a short delay to allow for data collection
+        setTimeout(() => {
+          clearTimeout(timeout);
+          resolve(results);
+        }, 2000);
+      } catch (err) {
+        clearTimeout(timeout);
+        console.error('🔫 GunJS: Error searching users:', err);
+        resolve([]);
+      }
+    });
+  }
+
+  async getPublicProfile(userId: string): Promise<{ success: boolean; profile?: any; error?: string }> {
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        resolve({ success: false, error: 'Profile request timed out' });
+      }, 3000);
+
+      try {
+        this.gun.get('publicUsers').get(userId).once((userData: any) => {
+          clearTimeout(timeout);
+          if (userData) {
+            resolve({ success: true, profile: userData });
+          } else {
+            resolve({ success: false, error: 'User not found' });
+          }
+        });
+      } catch (err) {
+        clearTimeout(timeout);
+        resolve({ success: false, error: 'Error fetching profile' });
+      }
+    });
+  }
+
+  // Friend request methods
+  async sendFriendRequest(fromUserId: string, fromUsername: string, fromDisplayName: string, toUserId: string, toUsername: string, toDisplayName: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (!this.user.is) {
+        return { success: false, error: 'User not authenticated' };
+      }
+
+      const requestId = `req_${Date.now()}_${fromUserId}_${toUserId}`;
+      const friendRequest = {
+        id: requestId,
+        fromUserId,
+        fromUsername,
+        fromDisplayName,
+        toUserId,
+        toUsername,
+        toDisplayName,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+
+      // Store the request in both users' friend request collections
+      this.gun.get('friendRequests').get(toUserId).get(requestId).put(friendRequest);
+      this.gun.get('sentRequests').get(fromUserId).get(requestId).put(friendRequest);
+
+      return { success: true };
+    } catch (err) {
+      console.error('🔫 GunJS: Error sending friend request:', err);
+      return { success: false, error: 'Failed to send friend request' };
+    }
+  }
+
+  async getFriendRequests(): Promise<{ success: boolean; requests?: any[]; error?: string }> {
+    return new Promise((resolve) => {
+      if (!this.user.is) {
+        resolve({ success: false, error: 'User not authenticated' });
+        return;
+      }
+
+      const requests: any[] = [];
+      const timeout = setTimeout(() => {
+        resolve({ success: true, requests });
+      }, 3000);
+
+      try {
+        this.gun.get('friendRequests').get(this.user.is.pub).map().on((request: any) => {
+          if (request && request.id && request.status === 'pending') {
+            const existingIndex = requests.findIndex(r => r.id === request.id);
+            if (existingIndex === -1) {
+              requests.push(request);
+            }
+          }
+        });
+
+        setTimeout(() => {
+          clearTimeout(timeout);
+          resolve({ success: true, requests });
+        }, 2000);
+      } catch (err) {
+        clearTimeout(timeout);
+        resolve({ success: false, error: 'Error fetching friend requests' });
+      }
+    });
+  }
+  async acceptFriendRequest(requestId: string, fromUserId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (!this.user.is) {
+        return { success: false, error: 'User not authenticated' };
+      }
+
+      console.log('🔫 GunJS: Accepting friend request:', requestId, 'from:', fromUserId);
+
+      // Update the request status
+      const updatedRequest = {
+        status: 'accepted',
+        respondedAt: new Date().toISOString()
+      };
+
+      // Update request in both locations
+      this.gun.get('friendRequests').get(this.user.is.pub).get(requestId).put(updatedRequest);
+      this.gun.get('sentRequests').get(fromUserId).get(requestId).put(updatedRequest);
+
+      // Create bidirectional friendship
+      const friendshipId = [this.user.is.pub, fromUserId].sort().join('_');
+      const friendship = {
+        id: friendshipId,
+        user1: this.user.is.pub,
+        user2: fromUserId,
+        createdAt: new Date().toISOString(),
+        status: 'active'
+      };
+
+      console.log('🔫 GunJS: Creating friendship:', friendshipId);
+      this.gun.get('friendships').get(friendshipId).put(friendship);
+
+      // Also store in a reverse lookup for faster queries
+      this.gun.get('userFriends').get(this.user.is.pub).get(fromUserId).put({
+        friendId: fromUserId,
+        since: new Date().toISOString()
+      });
+      
+      this.gun.get('userFriends').get(fromUserId).get(this.user.is.pub).put({
+        friendId: this.user.is.pub,
+        since: new Date().toISOString()
+      });
+
+      console.log('🔫 GunJS: Friend request accepted successfully');
+      return { success: true };
+    } catch (err) {
+      console.error('🔫 GunJS: Error accepting friend request:', err);
+      return { success: false, error: 'Failed to accept friend request' };
+    }
+  }
+
+  async declineFriendRequest(requestId: string, fromUserId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (!this.user.is) {
+        return { success: false, error: 'User not authenticated' };
+      }
+
+      // Update the request status
+      const updatedRequest = {
+        status: 'declined',
+        respondedAt: new Date().toISOString()
+      };
+
+      this.gun.get('friendRequests').get(this.user.is.pub).get(requestId).put(updatedRequest);
+      this.gun.get('sentRequests').get(fromUserId).get(requestId).put(updatedRequest);
+
+      return { success: true };
+    } catch (err) {
+      console.error('🔫 GunJS: Error declining friend request:', err);
+      return { success: false, error: 'Failed to decline friend request' };
+    }
+  }
+  async getFriends(): Promise<{ success: boolean; friends?: any[]; error?: string }> {
+    return new Promise((resolve) => {
+      if (!this.user.is) {
+        resolve({ success: false, error: 'User not authenticated' });
+        return;
+      }
+
+      const friends: any[] = [];
+      const processedFriendships = new Set<string>();
+      let processingCount = 0;
+
+      const timeout = setTimeout(() => {
+        console.log('🔫 GunJS: getFriends timeout, returning', friends.length, 'friends');
+        resolve({ success: true, friends });
+      }, 4000);
+
+      try {
+        // Listen for all friendships
+        this.gun.get('friendships').map().on((friendship: any, key: string) => {
+          if (!friendship || !key || processedFriendships.has(key)) {
+            return;
+          }
+
+          if (friendship.user1 === this.user.is.pub || friendship.user2 === this.user.is.pub) {
+            processedFriendships.add(key);
+            processingCount++;
+            
+            const friendId = friendship.user1 === this.user.is.pub ? friendship.user2 : friendship.user1;
+            
+            // Get friend's public profile
+            this.gun.get('publicUsers').get(friendId).once((friendData: any) => {
+              processingCount--;
+              
+              if (friendData && !friends.find(f => f.id === friendId)) {
+                friends.push({
+                  id: friendId,
+                  username: friendData.username,
+                  displayName: friendData.displayName,
+                  status: 'accepted',
+                  addedAt: friendship.createdAt
+                });
+                console.log('🔫 GunJS: Added friend:', friendData.username);
+              }
+              
+              // If we've finished processing and have been waiting, resolve
+              if (processingCount === 0) {
+                setTimeout(() => {
+                  clearTimeout(timeout);
+                  resolve({ success: true, friends });
+                }, 500); // Small delay to ensure all data is processed
+              }
+            });
+          }
+        });
+
+        // Also resolve after a reasonable time even if we're still processing
+        setTimeout(() => {
+          if (processingCount === 0) {
+            clearTimeout(timeout);
+            resolve({ success: true, friends });
+          }
+        }, 2000);
+        
+      } catch (err) {
+        clearTimeout(timeout);
+        resolve({ success: false, error: 'Error fetching friends' });
+      }
+    });
+  }
+
+  async removeFriend(friendId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (!this.user.is) {
+        return { success: false, error: 'User not authenticated' };
+      }      // Remove the friendship
+      const friendshipId = [this.user.is.pub, friendId].sort().join('_');
+      this.gun.get('friendships').get(friendshipId).put(null);
+
+      return { success: true };
+    } catch (err) {
+      console.error('🔫 GunJS: Error removing friend:', err);
+      return { success: false, error: 'Failed to remove friend' };
+    }
+  }  // Public stats methods for leaderboard functionality
+  async updatePublicStats(stats: any): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (!this.user.is) {
+        console.error('🔫 GunJS: Cannot update public stats - user not authenticated');
+        return { success: false, error: 'User not authenticated' };
+      }
+
+      // Validate stats data
+      if (!stats || typeof stats !== 'object') {
+        console.error('🔫 GunJS: Invalid stats data provided');
+        return { success: false, error: 'Invalid stats data' };
+      }
+
+      const publicStats = {
+        userId: this.user.is.pub,
+        username: this.user.is.alias || 'Unknown',
+        totalBooksRead: Math.max(0, Number(stats.totalBooksRead) || 0),
+        totalPagesRead: Math.max(0, Number(stats.totalPagesRead) || 0),
+        totalReadingTime: Math.max(0, Number(stats.totalReadingTime) || 0),
+        currentStreak: Math.max(0, Number(stats.currentStreak) || 0),
+        lastUpdated: new Date().toISOString(),
+        timestamp: Date.now() // Add timestamp for ordering
+      };
+
+      console.log('🔫 GunJS: Updating public stats for user:', this.user.is.pub);
+      console.log('🔫 GunJS: Stats being updated:', publicStats);
+
+      // Store public stats for leaderboard with multiple persistence strategies
+      return new Promise((resolve) => {
+        let resolved = false;
+        
+        const resolveOnce = (result: { success: boolean; error?: string }) => {
+          if (!resolved) {
+            resolved = true;
+            resolve(result);
+          }
+        };
+
+        try {
+          // Strategy 1: Direct put with confirmation
+          const statsRef = this.gun.get('publicStats').get(this.user.is.pub);
+          
+          statsRef.put(publicStats, (ack: any) => {
+            if (ack.err) {
+              console.error('🔫 GunJS: ❌ Error storing public stats (strategy 1):', ack.err);
+            } else {
+              console.log('🔫 GunJS: ✅ Public stats updated successfully (strategy 1)');
+              resolveOnce({ success: true });
+            }
+          });
+          
+          // Strategy 2: Alternative storage path for redundancy
+          this.gun.get('userStats').get(this.user.is.pub).put(publicStats);
+          
+          // Strategy 3: Store in user's personal space as backup
+          this.user.get('publicStats').put(publicStats);
+          
+          // Strategy 4: Global stats collection
+          this.gun.get('allPublicStats').set(publicStats);
+          
+          // Timeout fallback - assume success after delay
+          setTimeout(() => {
+            console.log('🔫 GunJS: ⚠️ Public stats update timeout, assuming success');
+            resolveOnce({ success: true });
+          }, 3000);
+          
+        } catch (error) {
+          console.error('🔫 GunJS: ❌ Error in stats update promise:', error);
+          resolveOnce({ success: false, error: 'Promise execution failed' });
+        }
+      });
+    } catch (err) {
+      console.error('🔫 GunJS: ❌ Error updating public stats:', err);
+      return { success: false, error: 'Failed to update public stats' };
+    }
+  }
+
+  async getPublicStats(userId: string): Promise<{ success: boolean; stats?: any; error?: string }> {
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        resolve({ success: false, error: 'Stats request timed out' });
+      }, 3000);
+
+      try {
+        this.gun.get('publicStats').get(userId).once((stats: any) => {
+          clearTimeout(timeout);
+          if (stats) {
+            resolve({ success: true, stats });
+          } else {
+            resolve({ success: false, error: 'Stats not found' });
+          }
+        });
+      } catch (err) {
+        clearTimeout(timeout);
+        resolve({ success: false, error: 'Error fetching stats' });
+      }
+    });
+  }  async getAllPublicStats(): Promise<{ success: boolean; allStats?: any[]; error?: string }> {
+    return new Promise((resolve) => {
+      const allStats: any[] = [];
+      const seenUserIds = new Set<string>();
+      let timeoutId: NodeJS.Timeout;
+      
+      const resolveWithStats = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        const uniqueStats = allStats.filter(stat => {
+          if (seenUserIds.has(stat.userId)) return false;
+          seenUserIds.add(stat.userId);
+          return true;
+        });
+        console.log('🔫 GunJS: Returning', uniqueStats.length, 'unique public stats');
+        resolve({ success: true, allStats: uniqueStats });
+      };
+
+      timeoutId = setTimeout(() => {
+        console.log('🔫 GunJS: getAllPublicStats timeout, returning', allStats.length, 'stats');
+        resolveWithStats();
+      }, 5000);
+
+      try {
+        console.log('🔫 GunJS: Starting to fetch all public stats from multiple sources...');
+        
+        // Source 1: publicStats collection
+        this.gun.get('publicStats').map().on((stats: any, userId: string) => {
+          if (stats && userId && typeof stats === 'object' && !seenUserIds.has(userId)) {
+            console.log('🔫 GunJS: Found public stats (source 1) for user:', userId, stats);
+            allStats.push({
+              ...stats,
+              userId,
+              source: 'publicStats'
+            });
+          }
+        });
+        
+        // Source 2: userStats collection (backup)
+        this.gun.get('userStats').map().on((stats: any, userId: string) => {
+          if (stats && userId && typeof stats === 'object' && !seenUserIds.has(userId)) {
+            console.log('🔫 GunJS: Found user stats (source 2) for user:', userId, stats);
+            allStats.push({
+              ...stats,
+              userId,
+              source: 'userStats'
+            });
+          }
+        });
+          // Source 3: allPublicStats set
+        this.gun.get('allPublicStats').map().on((stats: any, _key: string) => {
+          if (stats && stats.userId && typeof stats === 'object' && !seenUserIds.has(stats.userId)) {
+            console.log('🔫 GunJS: Found stats (source 3) for user:', stats.userId, stats);
+            allStats.push({
+              ...stats,
+              source: 'allPublicStats'
+            });
+          }
+        });
+
+        // Give time to collect data, then resolve
+        setTimeout(() => {
+          resolveWithStats();
+        }, 3000);
+        
+      } catch (err) {
+        if (timeoutId) clearTimeout(timeoutId);
+        console.error('🔫 GunJS: Error fetching all public stats:', err);
+        resolve({ success: false, error: 'Failed to fetch public stats' });
+      }
+    });
+  }
+
+  // Public activity feed methods
+  async publishActivity(activity: {
+    type: 'book_completed' | 'reading_session' | 'note_added' | 'achievement_unlocked';
+    title: string;
+    description: string;
+    bookTitle?: string;
+    bookCover?: string;
+    metadata?: {
+      pagesRead?: number;
+      duration?: number;
+      achievement?: string;
+    };
+  }): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (!this.user.is) {
+        return { success: false, error: 'User not authenticated' };
+      }      // Get current user info
+      const currentUser = this.getCurrentUser();
+      
+      // Get user profile for display name
+      const profileResult = await this.getProfile();
+      const displayName = profileResult.success ? 
+        (profileResult.profile?.displayName || profileResult.profile?.username || currentUser?.username) : 
+        currentUser?.username || 'Unknown';
+      
+      const activityEntry = {
+        id: `activity_${Date.now()}_${this.user.is.pub}`,
+        userId: this.user.is.pub,
+        username: currentUser?.username || 'Unknown',
+        displayName: displayName,
+        type: activity.type,
+        title: activity.title,
+        description: activity.description,
+        timestamp: new Date().toISOString(),
+        bookTitle: activity.bookTitle,
+        bookCover: activity.bookCover,
+        metadata: activity.metadata
+      };
+
+      // Store in public activity feed
+      this.gun.get('publicActivity').get(activityEntry.id).put(activityEntry);
+      
+      // Also store in user's activity history for friends to query
+      this.gun.get('userActivity').get(this.user.is.pub).set(activityEntry);
+
+      console.log('🔫 GunJS: Published activity:', activityEntry);
+      return { success: true };
+    } catch (err) {
+      console.error('🔫 GunJS: Error publishing activity:', err);
+      return { success: false, error: 'Failed to publish activity' };
+    }
+  }
+
+  async getFriendActivities(friendIds: string[]): Promise<{ success: boolean; activities?: any[]; error?: string }> {
+    return new Promise((resolve) => {
+      const allActivities: any[] = [];
+      const timeout = setTimeout(() => {
+        console.log('🔫 GunJS: getFriendActivities timeout, returning', allActivities.length, 'activities');
+        resolve({ success: true, activities: allActivities });
+      }, 4000);
+
+      try {
+        console.log('🔫 GunJS: Fetching activities for friends:', friendIds);
+        
+        if (friendIds.length === 0) {
+          clearTimeout(timeout);
+          resolve({ success: true, activities: [] });
+          return;        }
+
+        const processFriend = (friendId: string) => {
+          this.gun.get('userActivity').get(friendId).map().once((activity: any) => {
+            if (activity && activity.id && activity.timestamp) {
+              // Check if activity is recent (last 30 days)
+              const activityDate = new Date(activity.timestamp);
+              const thirtyDaysAgo = new Date(Date.now() - (30 * 24 * 60 * 60 * 1000));
+              
+              if (activityDate > thirtyDaysAgo && !allActivities.find(a => a.id === activity.id)) {
+                allActivities.push(activity);
+              }
+            }
+          });
+        };
+
+        friendIds.forEach(processFriend);
+        
+        // Also fetch from public activity feed as backup
+        this.gun.get('publicActivity').map().on((activity: any) => {
+          if (activity && activity.userId && friendIds.includes(activity.userId)) {
+            const activityDate = new Date(activity.timestamp);
+            const thirtyDaysAgo = new Date(Date.now() - (30 * 24 * 60 * 60 * 1000));
+            
+            if (activityDate > thirtyDaysAgo && !allActivities.find(a => a.id === activity.id)) {
+              allActivities.push(activity);
+            }
+          }
+        });
+
+        setTimeout(() => {
+          clearTimeout(timeout);
+          // Sort activities by timestamp (newest first)
+          const sortedActivities = allActivities.sort((a, b) => 
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          ).slice(0, 20); // Limit to 20 most recent activities
+          
+          console.log('🔫 GunJS: Returning', sortedActivities.length, 'friend activities');
+          resolve({ success: true, activities: sortedActivities });
+        }, 2000);
+      } catch (err) {
+        clearTimeout(timeout);
+        console.error('🔫 GunJS: Error fetching friend activities:', err);
+        resolve({ success: false, error: 'Failed to fetch activities' });
+      }
+    });
+  }
+
+  async getRecentPublicActivity(limit: number = 50): Promise<{ success: boolean; activities?: any[]; error?: string }> {
+    return new Promise((resolve) => {
+      const allActivities: any[] = [];
+      const timeout = setTimeout(() => {
+        console.log('🔫 GunJS: getRecentPublicActivity timeout, returning', allActivities.length, 'activities');
+        resolve({ success: true, activities: allActivities });
+      }, 3000);
+
+      try {
+        this.gun.get('publicActivity').map().on((activity: any) => {
+          if (activity && activity.id && activity.timestamp) {
+            // Check if activity is recent (last 7 days for public feed)
+            const activityDate = new Date(activity.timestamp);
+            const sevenDaysAgo = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000));
+            
+            if (activityDate > sevenDaysAgo && !allActivities.find(a => a.id === activity.id)) {
+              allActivities.push(activity);
+            }
+          }
+        });
+
+        setTimeout(() => {
+          clearTimeout(timeout);
+          // Sort activities by timestamp (newest first) and limit
+          const sortedActivities = allActivities.sort((a, b) => 
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          ).slice(0, limit);
+          
+          resolve({ success: true, activities: sortedActivities });
+        }, 2000);
+      } catch (err) {
+        clearTimeout(timeout);
+        console.error('🔫 GunJS: Error fetching recent public activity:', err);
+        resolve({ success: false, error: 'Failed to fetch public activity' });
+      }
+    });
+  }
+
+  // Verification function to check if stats are properly persisted
+  async verifyStatsSync(): Promise<{ success: boolean; localStats?: any; gunStats?: any; error?: string }> {
+    try {
+      if (!this.user.is) {
+        return { success: false, error: 'User not authenticated' };
+      }
+
+      // Get local stats
+      const localBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
+      const localSessions = JSON.parse(localStorage.getItem('bookish_reading_sessions') || '[]');
+      
+      const localStats = {
+        totalBooksRead: localBooks.filter((book: any) => book.category === 'completed').length,
+        totalReadingTime: localSessions.reduce((total: number, session: any) => total + (session.duration || 0), 0),
+        totalPagesRead: localSessions.reduce((total: number, session: any) => {
+          const pagesRead = (session.endPage || 0) - (session.startPage || 0);
+          return total + Math.max(0, pagesRead);
+        }, 0)
+      };
+
+      // Get GunJS stats
+      const gunStatsResult = await this.getPublicStats(this.user.is.pub);
+      
+      console.log('🔍 Stats verification:');
+      console.log('📊 Local stats:', localStats);
+      console.log('🔫 GunJS stats:', gunStatsResult.success ? gunStatsResult.stats : 'Not found');
+      
+      return {
+        success: true,
+        localStats,
+        gunStats: gunStatsResult.success ? gunStatsResult.stats : null
+      };
+    } catch (error) {
+      console.error('❌ Error verifying stats sync:', error);
+      return { success: false, error: 'Verification failed' };
+    }
+  }
+
 }
 
 export const gunService = new GunService();

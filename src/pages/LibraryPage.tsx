@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Clock, MoreVertical, Trash2, Check, Move } from 'lucide-react';
 import { useBooks } from '../context/BookContext';
+import { useFriends } from '../context/FriendsContext';
 import { usePet } from '../context/PetContext';
 import { useTheme } from '../context/ThemeContext';
 import { getSessionsByBook } from '../services/storage';
@@ -11,7 +12,8 @@ import Layout from '../components/Layout';
 
 const LibraryPage: React.FC = () => {
   const navigate = useNavigate();
-  const { books } = useBooks();
+  const { books, addBook, updatePublicStatsAfterBookCompletion } = useBooks();
+  const { refreshLeaderboard } = useFriends();
   const { updatePetFromBookCompletion } = usePet();
   const { theme } = useTheme();
   const modal = useConfirmationModal();const [showDropdown, setShowDropdown] = useState<string | null>(null);
@@ -81,20 +83,34 @@ const LibraryPage: React.FC = () => {
       }
     );
     setShowDropdown(null);
-  };const handleMoveBook = (bookKey: string, newCategory: string, e?: React.MouseEvent) => {
+  };  const handleMoveBook = async (bookKey: string, newCategory: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     
-    // Update book category in storage
+    // Find the book to update
     const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
+    const bookToUpdate = savedBooks.find((book: any) => book.key === bookKey);
+    
+    if (!bookToUpdate) return;
+      // Create updated book with new category and completion timestamp if completed
+    const updatedBook = { 
+      ...bookToUpdate, 
+      category: newCategory as 'reading' | 'completed' | 'wishlist',
+      ...(newCategory === 'completed' && { completedAt: new Date().toISOString() })
+    };
+    
+    // Use BookContext's addBook method which will handle activity publishing and stats updating
+    await addBook(updatedBook);
+    
+    // Update local storage for backward compatibility
     const updatedBooks = savedBooks.map((book: any) => 
-      book.key === bookKey ? { ...book, category: newCategory } : book
+      book.key === bookKey ? updatedBook : book
     );
     localStorage.setItem('bookish_books', JSON.stringify(updatedBooks));
     
     // Also update old storage for backward compatibility
     const oldSavedBooks = JSON.parse(localStorage.getItem('myBooks') || '[]');
     const oldUpdatedBooks = oldSavedBooks.map((book: any) => 
-      book.key === bookKey ? { ...book, category: newCategory } : book
+      book.key === bookKey ? updatedBook : book
     );
     localStorage.setItem('myBooks', JSON.stringify(oldUpdatedBooks));
     
@@ -106,12 +122,19 @@ const LibraryPage: React.FC = () => {
     e.stopPropagation();
     modal.showConfirm(
       'Mark as Completed',
-      'Mark this book as completed? This will give your pet a big experience boost!',
-      () => {
-        handleMoveBook(bookKey, 'completed');
+      'Mark this book as completed? This will give your pet a big experience boost!',      async () => {
+        await handleMoveBook(bookKey, 'completed');
+        
+        // Manually trigger stats update to ensure immediate refresh
+        await updatePublicStatsAfterBookCompletion();
         
         // Trigger pet reward
         updatePetFromBookCompletion();
+        
+        // Refresh leaderboard to show updated stats
+        setTimeout(() => {
+          refreshLeaderboard('week', 'books_read');
+        }, 1000);
         
         // Show success message
         setTimeout(() => {
