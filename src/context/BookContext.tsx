@@ -75,7 +75,8 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
     };
     
     loadBookData();
-  }, [currentBook]);  const addBook = async (book: Book) => {
+  }, [currentBook]);
+  const addBook = async (book: Book) => {
     const updatedBooks = [...books];
     const existingIndex = updatedBooks.findIndex(b => b.key === book.key);
     
@@ -90,19 +91,10 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
     }
     
     setBooks(updatedBooks);
-    
-    // Save to both synced storage and local storage immediately
     await syncedStorage.saveBooks(updatedBooks);
-    
-    // Force immediate localStorage update for stats calculation
-    localStorage.setItem('bookish_books', JSON.stringify(updatedBooks));
-    
-    // Publish activity if book was just completed
+      // Publish activity if book was just completed
     if (!wasCompleted && isNowCompleted) {
       try {
-        console.log('📚 Book marked as completed, triggering all sync mechanisms...');
-        
-        // 1. Publish activity
         await gunService.publishActivity({
           type: 'book_completed',
           title: 'Completed a book!',
@@ -113,30 +105,16 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
             pagesRead: book.number_of_pages_median || 200
           }
         });
-        console.log('✅ Published book completion activity:', book.title);
+        console.log('📚 Published book completion activity:', book.title);
 
-        // 2. Wait a moment for localStorage to settle
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // 3. Force sync local stats to GunJS
-        const syncSuccess = await forceSyncLocalStatsToGunJS();
-        if (!syncSuccess) {
-          // Fallback to regular stats update
-          await updatePublicStatsAfterBookCompletion();
-        }
-        
-        console.log('✅ All book completion sync mechanisms completed');
+        // Immediately update public stats when a book is completed
+        await updatePublicStatsAfterBookCompletion();
       } catch (err) {
-        console.error('❌ Error in book completion sync:', err);
-        // Fallback: try regular stats update
-        try {
-          await updatePublicStatsAfterBookCompletion();
-        } catch (fallbackErr) {
-          console.error('❌ Fallback stats update also failed:', fallbackErr);
-        }
+        console.error('Error publishing book completion activity:', err);
       }
     }
-  };// Function to recalculate and update public stats
+  };
+  // Function to recalculate and update public stats
   const updatePublicStatsAfterBookCompletion = async () => {
     try {
       console.log('📊 Updating public stats after book completion...');
@@ -145,8 +123,8 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
       const localBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
       const localSessions = JSON.parse(localStorage.getItem('bookish_reading_sessions') || '[]');
       
-      console.log('📊 Local books data:', localBooks.length, 'books');
-      console.log('📊 Local sessions data:', localSessions.length, 'sessions');
+      console.log('📊 Local books data:', localBooks);
+      console.log('📊 Local sessions data:', localSessions);
       
       const completedBooks = localBooks.filter((book: any) => book.category === 'completed');
       console.log('📊 Completed books count:', completedBooks.length);
@@ -165,41 +143,21 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
       // Calculate current reading streak
       const currentStreak = calculateReadingStreak(localSessions);
       
-      // Ensure we have minimum reasonable stats
       const stats = {
-        totalBooksRead: Math.max(completedBooks.length, 0),
+        totalBooksRead: completedBooks.length,
         totalPagesRead: Math.max(totalPagesRead, completedBooks.length * 200), // Minimum estimate
-        totalReadingTime: Math.max(totalReadingTime, 0),
-        currentStreak: Math.max(currentStreak, 0)
+        totalReadingTime,
+        currentStreak
       };
       
-      console.log('📊 Final calculated stats:', stats);
+      console.log('📊 Calculated stats:', stats);
       
-      // Ensure user is authenticated before updating
-      const isAuthenticated = await gunService.getCurrentUser();
-      if (!isAuthenticated.success) {
-        console.error('❌ User not authenticated, cannot update public stats');
-        return;
-      }
-      
-      // Update public stats in GunJS with retry logic
-      let retryCount = 0;
-      const maxRetries = 3;
-      
-      while (retryCount < maxRetries) {
-        const result = await gunService.updatePublicStats(stats);
-        if (result.success) {
-          console.log('✅ Public stats updated successfully');
-          break;
-        } else {
-          retryCount++;
-          console.error(`❌ Failed to update public stats (attempt ${retryCount}/${maxRetries}):`, result.error);
-          
-          if (retryCount < maxRetries) {
-            // Wait before retrying
-            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-          }
-        }
+      // Update public stats in GunJS
+      const result = await gunService.updatePublicStats(stats);
+      if (result.success) {
+        console.log('✅ Public stats updated successfully');
+      } else {
+        console.error('❌ Failed to update public stats:', result.error);
       }
     } catch (error) {
       console.error('❌ Error updating public stats:', error);
@@ -405,124 +363,6 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
       console.error('Error updating public stats:', err);
     }
   };
-  // Debug function to test stats calculation and update
-  const debugStatsAndUpdate = async () => {
-    console.log('🔍 DEBUG: Starting comprehensive stats debug...');
-    
-    // Check all data sources
-    const localBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
-    const localSessions = JSON.parse(localStorage.getItem('bookish_reading_sessions') || '[]');
-    const syncedBooks = await syncedStorage.getBooks();
-    const syncedSessions = await syncedStorage.getReadingSessions();
-    
-    console.log('📚 Local books:', localBooks.length, localBooks);
-    console.log('📖 Local sessions:', localSessions.length, localSessions);
-    console.log('🔄 Synced books:', syncedBooks.length, syncedBooks);
-    console.log('🔄 Synced sessions:', syncedSessions.length, syncedSessions);
-    
-    // Check authentication status
-    const authStatus = await gunService.getCurrentUser();
-    console.log('🔐 Auth status:', authStatus);
-    
-    // Test stats calculation
-    await updatePublicStatsAfterBookCompletion();
-    
-    // Test leaderboard fetch
-    console.log('📊 Testing leaderboard fetch...');
-    const allStats = await gunService.getAllPublicStats();
-    console.log('📊 All public stats:', allStats);
-    
-    return {
-      localBooks: localBooks.length,
-      localSessions: localSessions.length,
-      syncedBooks: syncedBooks.length,
-      syncedSessions: syncedSessions.length,
-      authStatus,
-      allStats
-    };
-  };
-  // Test function to simulate book completion
-  const testBookCompletion = async () => {
-    console.log('🧪 Testing book completion flow...');
-    
-    const testBook = {
-      key: `test-book-${Date.now()}`,
-      title: `Test Book ${Date.now()}`,
-      author_name: ['Test Author'],
-      category: 'completed' as const,
-      status: 'read' as const,
-      cover_i: undefined,
-      number_of_pages_median: 250,
-      progress: 100,
-      dateCompleted: new Date().toISOString()
-    };
-    
-    try {
-      // Add the test book using the same method as the real flow
-      await addBook(testBook);
-      console.log('✅ Test book added successfully');
-      
-      // Force stats update
-      await updatePublicStatsAfterBookCompletion();
-      console.log('✅ Stats updated after test book completion');
-      
-      return testBook;
-    } catch (error) {
-      console.error('❌ Error in test book completion:', error);
-      throw error;
-    }
-  };
-
-  // Force synchronization of local stats to GunJS
-  const forceSyncLocalStatsToGunJS = async () => {
-    try {
-      console.log('🔄 Force syncing local stats to GunJS...');
-      
-      // Get the most recent local data
-      const localBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
-      const localSessions = JSON.parse(localStorage.getItem('bookish_reading_sessions') || '[]');
-      
-      // Recalculate stats
-      const completedBooks = localBooks.filter((book: any) => book.category === 'completed');
-      const totalReadingTime = localSessions.reduce((total: number, session: any) => {
-        return total + (session.duration || 0);
-      }, 0);
-      const totalPagesRead = localSessions.reduce((total: number, session: any) => {
-        const pagesRead = (session.endPage || 0) - (session.startPage || 0);
-        return total + Math.max(0, pagesRead);
-      }, 0);
-      const currentStreak = calculateReadingStreak(localSessions);
-      
-      const stats = {
-        totalBooksRead: completedBooks.length,
-        totalPagesRead: Math.max(totalPagesRead, completedBooks.length * 200),
-        totalReadingTime,
-        currentStreak
-      };
-      
-      console.log('🔄 Syncing stats to GunJS:', stats);
-      
-      // Force update to GunJS with retries
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        const result = await gunService.updatePublicStats(stats);
-        if (result.success) {
-          console.log('✅ Stats successfully synced to GunJS');
-          return true;
-        } else {
-          console.warn(`⚠️ Sync attempt ${attempt} failed:`, result.error);
-          if (attempt < 3) {
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-          }
-        }
-      }
-      
-      console.error('❌ Failed to sync stats to GunJS after 3 attempts');
-      return false;
-    } catch (error) {
-      console.error('❌ Error in force sync:', error);
-      return false;
-    }
-  };
 
   // Update public stats whenever books or sessions change
   useEffect(() => {
@@ -545,27 +385,10 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
     deleteNote,    updatePublicStatsAfterBookCompletion // Export this function for manual calls
   };
 
-  // Debug: Expose debugging functions to window for manual testing
+  // Debug: Expose updatePublicStatsAfterBookCompletion to window for manual testing
   React.useEffect(() => {
     // @ts-ignore
     window.debugUpdateStats = updatePublicStatsAfterBookCompletion;
-    // @ts-ignore
-    window.debugStatsAndUpdate = debugStatsAndUpdate;    // @ts-ignore
-    window.debugTestBookCompletion = testBookCompletion;
-    // @ts-ignore
-    window.debugForceSyncStats = forceSyncLocalStatsToGunJS;
-    // @ts-ignore
-    window.debugVerifyStatsSync = async () => {
-      const result = await gunService.verifyStatsSync();
-      console.log('📊 Stats sync verification:', result);
-      return result;
-    };
-    // @ts-ignore
-    window.debugForceStatsUpdate = async () => {
-      console.log('🔧 Force updating stats...');
-      await updatePublicStatsAfterBookCompletion();
-      console.log('✅ Force update completed');
-    };
   }, []);
 
   return (

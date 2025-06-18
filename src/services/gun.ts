@@ -850,7 +850,8 @@ class GunService {
       console.error('🔫 GunJS: Error removing friend:', err);
       return { success: false, error: 'Failed to remove friend' };
     }
-  }  // Public stats methods for leaderboard functionality
+  }
+  // Public stats methods for leaderboard functionality
   async updatePublicStats(stats: any): Promise<{ success: boolean; error?: string }> {
     try {
       if (!this.user.is) {
@@ -858,70 +859,23 @@ class GunService {
         return { success: false, error: 'User not authenticated' };
       }
 
-      // Validate stats data
-      if (!stats || typeof stats !== 'object') {
-        console.error('🔫 GunJS: Invalid stats data provided');
-        return { success: false, error: 'Invalid stats data' };
-      }
-
       const publicStats = {
         userId: this.user.is.pub,
-        username: this.user.is.alias || 'Unknown',
-        totalBooksRead: Math.max(0, Number(stats.totalBooksRead) || 0),
-        totalPagesRead: Math.max(0, Number(stats.totalPagesRead) || 0),
-        totalReadingTime: Math.max(0, Number(stats.totalReadingTime) || 0),
-        currentStreak: Math.max(0, Number(stats.currentStreak) || 0),
-        lastUpdated: new Date().toISOString(),
-        timestamp: Date.now() // Add timestamp for ordering
+        totalBooksRead: stats.totalBooksRead || 0,
+        totalPagesRead: stats.totalPagesRead || 0,
+        totalReadingTime: stats.totalReadingTime || 0,
+        currentStreak: stats.currentStreak || 0,
+        lastUpdated: new Date().toISOString()
       };
 
       console.log('🔫 GunJS: Updating public stats for user:', this.user.is.pub);
       console.log('🔫 GunJS: Stats being updated:', publicStats);
 
-      // Store public stats for leaderboard with multiple persistence strategies
-      return new Promise((resolve) => {
-        let resolved = false;
-        
-        const resolveOnce = (result: { success: boolean; error?: string }) => {
-          if (!resolved) {
-            resolved = true;
-            resolve(result);
-          }
-        };
+      // Store public stats for leaderboard
+      this.gun.get('publicStats').get(this.user.is.pub).put(publicStats);
+      console.log('🔫 GunJS: ✅ Public stats updated successfully');
 
-        try {
-          // Strategy 1: Direct put with confirmation
-          const statsRef = this.gun.get('publicStats').get(this.user.is.pub);
-          
-          statsRef.put(publicStats, (ack: any) => {
-            if (ack.err) {
-              console.error('🔫 GunJS: ❌ Error storing public stats (strategy 1):', ack.err);
-            } else {
-              console.log('🔫 GunJS: ✅ Public stats updated successfully (strategy 1)');
-              resolveOnce({ success: true });
-            }
-          });
-          
-          // Strategy 2: Alternative storage path for redundancy
-          this.gun.get('userStats').get(this.user.is.pub).put(publicStats);
-          
-          // Strategy 3: Store in user's personal space as backup
-          this.user.get('publicStats').put(publicStats);
-          
-          // Strategy 4: Global stats collection
-          this.gun.get('allPublicStats').set(publicStats);
-          
-          // Timeout fallback - assume success after delay
-          setTimeout(() => {
-            console.log('🔫 GunJS: ⚠️ Public stats update timeout, assuming success');
-            resolveOnce({ success: true });
-          }, 3000);
-          
-        } catch (error) {
-          console.error('🔫 GunJS: ❌ Error in stats update promise:', error);
-          resolveOnce({ success: false, error: 'Promise execution failed' });
-        }
-      });
+      return { success: true };
     } catch (err) {
       console.error('🔫 GunJS: ❌ Error updating public stats:', err);
       return { success: false, error: 'Failed to update public stats' };
@@ -948,72 +902,34 @@ class GunService {
         resolve({ success: false, error: 'Error fetching stats' });
       }
     });
-  }  async getAllPublicStats(): Promise<{ success: boolean; allStats?: any[]; error?: string }> {
+  }
+  async getAllPublicStats(): Promise<{ success: boolean; allStats?: any[]; error?: string }> {
     return new Promise((resolve) => {
       const allStats: any[] = [];
-      const seenUserIds = new Set<string>();
-      let timeoutId: NodeJS.Timeout;
-      
-      const resolveWithStats = () => {
-        if (timeoutId) clearTimeout(timeoutId);
-        const uniqueStats = allStats.filter(stat => {
-          if (seenUserIds.has(stat.userId)) return false;
-          seenUserIds.add(stat.userId);
-          return true;
-        });
-        console.log('🔫 GunJS: Returning', uniqueStats.length, 'unique public stats');
-        resolve({ success: true, allStats: uniqueStats });
-      };
-
-      timeoutId = setTimeout(() => {
+      const timeout = setTimeout(() => {
         console.log('🔫 GunJS: getAllPublicStats timeout, returning', allStats.length, 'stats');
-        resolveWithStats();
-      }, 5000);
+        resolve({ success: true, allStats });
+      }, 4000);
 
       try {
-        console.log('🔫 GunJS: Starting to fetch all public stats from multiple sources...');
-        
-        // Source 1: publicStats collection
+        console.log('🔫 GunJS: Starting to fetch all public stats...');
         this.gun.get('publicStats').map().on((stats: any, userId: string) => {
-          if (stats && userId && typeof stats === 'object' && !seenUserIds.has(userId)) {
-            console.log('🔫 GunJS: Found public stats (source 1) for user:', userId, stats);
+          if (stats && userId && !allStats.find(s => s.userId === userId)) {
+            console.log('🔫 GunJS: Found public stats for user:', userId, stats);
             allStats.push({
               ...stats,
-              userId,
-              source: 'publicStats'
-            });
-          }
-        });
-        
-        // Source 2: userStats collection (backup)
-        this.gun.get('userStats').map().on((stats: any, userId: string) => {
-          if (stats && userId && typeof stats === 'object' && !seenUserIds.has(userId)) {
-            console.log('🔫 GunJS: Found user stats (source 2) for user:', userId, stats);
-            allStats.push({
-              ...stats,
-              userId,
-              source: 'userStats'
-            });
-          }
-        });
-          // Source 3: allPublicStats set
-        this.gun.get('allPublicStats').map().on((stats: any, _key: string) => {
-          if (stats && stats.userId && typeof stats === 'object' && !seenUserIds.has(stats.userId)) {
-            console.log('🔫 GunJS: Found stats (source 3) for user:', stats.userId, stats);
-            allStats.push({
-              ...stats,
-              source: 'allPublicStats'
+              userId
             });
           }
         });
 
-        // Give time to collect data, then resolve
         setTimeout(() => {
-          resolveWithStats();
-        }, 3000);
-        
+          clearTimeout(timeout);
+          console.log('🔫 GunJS: Returning', allStats.length, 'public stats');
+          resolve({ success: true, allStats });
+        }, 2000);
       } catch (err) {
-        if (timeoutId) clearTimeout(timeoutId);
+        clearTimeout(timeout);
         console.error('🔫 GunJS: Error fetching all public stats:', err);
         resolve({ success: false, error: 'Failed to fetch public stats' });
       }
@@ -1171,44 +1087,6 @@ class GunService {
         resolve({ success: false, error: 'Failed to fetch public activity' });
       }
     });
-  }
-
-  // Verification function to check if stats are properly persisted
-  async verifyStatsSync(): Promise<{ success: boolean; localStats?: any; gunStats?: any; error?: string }> {
-    try {
-      if (!this.user.is) {
-        return { success: false, error: 'User not authenticated' };
-      }
-
-      // Get local stats
-      const localBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
-      const localSessions = JSON.parse(localStorage.getItem('bookish_reading_sessions') || '[]');
-      
-      const localStats = {
-        totalBooksRead: localBooks.filter((book: any) => book.category === 'completed').length,
-        totalReadingTime: localSessions.reduce((total: number, session: any) => total + (session.duration || 0), 0),
-        totalPagesRead: localSessions.reduce((total: number, session: any) => {
-          const pagesRead = (session.endPage || 0) - (session.startPage || 0);
-          return total + Math.max(0, pagesRead);
-        }, 0)
-      };
-
-      // Get GunJS stats
-      const gunStatsResult = await this.getPublicStats(this.user.is.pub);
-      
-      console.log('🔍 Stats verification:');
-      console.log('📊 Local stats:', localStats);
-      console.log('🔫 GunJS stats:', gunStatsResult.success ? gunStatsResult.stats : 'Not found');
-      
-      return {
-        success: true,
-        localStats,
-        gunStats: gunStatsResult.success ? gunStatsResult.stats : null
-      };
-    } catch (error) {
-      console.error('❌ Error verifying stats sync:', error);
-      return { success: false, error: 'Verification failed' };
-    }
   }
 
 }

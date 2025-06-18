@@ -547,30 +547,6 @@ export const FriendsProvider: React.FC<FriendsProviderProps> = ({ children }) =>
     }
   };
 
-  // Debug: Expose manual refresh functions to window for testing
-    React.useEffect(() => {
-      // @ts-ignore
-      window.debugRefreshLeaderboard = () => refreshLeaderboard('week', 'books_read');
-      // @ts-ignore
-      window.debugRefreshActivity = refreshFriendActivity;
-      // @ts-ignore
-      window.debugGetAllStats = () => gunService.getAllPublicStats();
-    }, [refreshLeaderboard, refreshFriendActivity]);
-
-  // Initialize leaderboard and activity feed when user is authenticated
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      console.log('🔄 User authenticated, initializing leaderboard and activity...');
-      // Give a moment for GunJS to settle, then refresh leaderboard and activity
-      const timer = setTimeout(() => {
-        refreshLeaderboard('week', 'books_read');
-        refreshFriendActivity();
-      }, 2000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isAuthenticated, user, refreshLeaderboard, refreshFriendActivity]);
-
   const value: FriendsContextType = {
     friends,
     friendRequests,
