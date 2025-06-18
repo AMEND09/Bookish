@@ -35,7 +35,7 @@ const gun = Gun({
   peers: ['https://gun-ad4i.onrender.com/gun'] 
 });
 
-console.log('🔫 GunJS initialized with Manhattan peer');
+console.log('🔫 GunJS initialized with Render peer');
 console.log('🔫 Gun instance created:', typeof gun);
 console.log('🔫 Gun instance properties:', Object.keys(gun));
 
