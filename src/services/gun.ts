@@ -32,7 +32,7 @@ if (!Gun.SEA) {
 console.log('🔫 About to initialize Gun instance...');
 
 const gun = Gun({
-  peers: ['https://gun-manhattan.herokuapp.com/gun'] 
+  peers: ['https://gun-ad4i.onrender.com/gun'] 
 });
 
 console.log('🔫 GunJS initialized with Manhattan peer');
