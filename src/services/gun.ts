@@ -33,8 +33,7 @@ console.log('🔫 About to initialize Gun instance...');
 
 const gun = Gun({
   peers: ['https://gun-ad4i.onrender.com/gun',
-          'http://amend09.hackclub.app:8765/gun',
-          'bewildered-dulcy-amend09-294cb39e.koyeb.app/gun',
+          'https://bewildered-dulcy-amend09-294cb39e.koyeb.app/gun'
   ] 
 });
 
@@ -854,35 +853,50 @@ class GunService {
       return { success: false, error: 'Failed to remove friend' };
     }
   }
-  // Public stats methods for leaderboard functionality
+  // Public stats methods for leaderboard functionality  // Public stats methods for leaderboard functionality
   async updatePublicStats(stats: any): Promise<{ success: boolean; error?: string }> {
-    try {
-      if (!this.user.is) {
-        console.error('🔫 GunJS: Cannot update public stats - user not authenticated');
-        return { success: false, error: 'User not authenticated' };
+    return new Promise((resolve) => {
+      try {
+        if (!this.user.is) {
+          console.error('🔫 GunJS: Cannot update public stats - user not authenticated');
+          resolve({ success: false, error: 'User not authenticated' });
+          return;
+        }
+
+        const publicStats = {
+          userId: this.user.is.pub,
+          totalBooksRead: stats.totalBooksRead || 0,
+          totalPagesRead: stats.totalPagesRead || 0,
+          totalReadingTime: stats.totalReadingTime || 0,
+          currentStreak: stats.currentStreak || 0,
+          lastUpdated: new Date().toISOString()
+        };
+
+        console.log('🔫 GunJS: Updating public stats for user:', this.user.is.pub);
+        console.log('🔫 GunJS: Stats being updated:', publicStats);
+
+        // Store public stats for leaderboard with callback to ensure success
+        this.gun.get('publicStats').get(this.user.is.pub).put(publicStats, (ack: any) => {
+          if (ack.err) {
+            console.error('🔫 GunJS: ❌ Error updating public stats:', ack.err);
+            resolve({ success: false, error: ack.err });
+          } else {
+            console.log('🔫 GunJS: ✅ Public stats updated successfully with ack:', ack);
+            
+            // Verify the update by reading it back
+            setTimeout(() => {
+              this.gun.get('publicStats').get(this.user.is.pub).once((verifyStats: any) => {
+                console.log('🔫 GunJS: Verified stats after update:', verifyStats);
+                resolve({ success: true });
+              });
+            }, 500);
+          }
+        });
+      } catch (err) {
+        console.error('🔫 GunJS: ❌ Error updating public stats:', err);
+        resolve({ success: false, error: 'Failed to update public stats' });
       }
-
-      const publicStats = {
-        userId: this.user.is.pub,
-        totalBooksRead: stats.totalBooksRead || 0,
-        totalPagesRead: stats.totalPagesRead || 0,
-        totalReadingTime: stats.totalReadingTime || 0,
-        currentStreak: stats.currentStreak || 0,
-        lastUpdated: new Date().toISOString()
-      };
-
-      console.log('🔫 GunJS: Updating public stats for user:', this.user.is.pub);
-      console.log('🔫 GunJS: Stats being updated:', publicStats);
-
-      // Store public stats for leaderboard
-      this.gun.get('publicStats').get(this.user.is.pub).put(publicStats);
-      console.log('🔫 GunJS: ✅ Public stats updated successfully');
-
-      return { success: true };
-    } catch (err) {
-      console.error('🔫 GunJS: ❌ Error updating public stats:', err);
-      return { success: false, error: 'Failed to update public stats' };
-    }
+    });
   }
 
   async getPublicStats(userId: string): Promise<{ success: boolean; stats?: any; error?: string }> {

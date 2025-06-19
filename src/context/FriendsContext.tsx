@@ -49,13 +49,18 @@ export const FriendsProvider: React.FC<FriendsProviderProps> = ({ children }) =>
   const [error, setError] = useState<string | null>(null);
   const refreshingLeaderboard = useRef(false);
   const refreshingActivity = useRef(false);
-
+  
+  // Store current leaderboard settings for refresh
+  const [currentLeaderboardSettings, setCurrentLeaderboardSettings] = useState<{
+    period: 'week' | 'month' | 'year' | 'alltime';
+    metric: 'books_read' | 'pages_read' | 'reading_time' | 'streak';
+  } | null>(null);
   // Load friends data from GunJS on mount
   useEffect(() => {
     if (isAuthenticated && user) {
       loadFriendsData();
-    }
-  }, [isAuthenticated, user]);
+    }  }, [isAuthenticated, user]);
+  
   const loadFriendsData = async () => {
     if (!user) return;
     
@@ -388,6 +393,9 @@ export const FriendsProvider: React.FC<FriendsProviderProps> = ({ children }) =>
   ): Promise<void> => {
     if (!user) return;
     
+    // Store current settings for potential refresh
+    setCurrentLeaderboardSettings({ period, metric });
+    
     // Prevent multiple simultaneous calls
     if (refreshingLeaderboard.current) {
       console.log('⚠️ Leaderboard refresh already in progress, skipping...');
@@ -528,9 +536,28 @@ export const FriendsProvider: React.FC<FriendsProviderProps> = ({ children }) =>
       console.error('Error refreshing leaderboard:', err);
       setError('Failed to refresh leaderboard');    } finally {
       refreshingLeaderboard.current = false;
-      setLoading(false);
-    }
+      setLoading(false);    }
   }, [user, friends]); // Add dependencies for useCallback
+
+  // Listen for public stats updates to refresh leaderboard
+  useEffect(() => {
+    const handlePublicStatsUpdate = (event: CustomEvent) => {
+      console.log('🔄 Public stats updated, refreshing leaderboard...', event.detail);
+      // Refresh current leaderboard with a slight delay to ensure GunJS propagation
+      setTimeout(() => {
+        if (currentLeaderboardSettings) {
+          console.log('🔄 Re-fetching leaderboard with settings:', currentLeaderboardSettings);
+          refreshLeaderboard(currentLeaderboardSettings.period, currentLeaderboardSettings.metric);
+        }
+      }, 1500);
+    };
+
+    window.addEventListener('publicStatsUpdated', handlePublicStatsUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('publicStatsUpdated', handlePublicStatsUpdate as EventListener);
+    };
+  }, [currentLeaderboardSettings, refreshLeaderboard]);
 
   const searchUsers = async (query: string): Promise<{ id: string; username: string; displayName?: string }[]> => {
     if (!query.trim()) return [];

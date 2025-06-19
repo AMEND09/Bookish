@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Clock, BookOpenCheck, Flame } from 'lucide-react';
 import { getStats, getStreak } from '../../services/storage';
 import { useTheme } from '../../context/ThemeContext';
@@ -42,8 +42,28 @@ const StatCard: React.FC<StatCardProps> = ({ icon, value, label, color }) => {
 
 const ReadingStats: React.FC = () => {
   const { theme } = useTheme();
-  const stats = getStats();
-  const streak = getStreak();
+  const [stats, setStats] = useState(getStats());
+  const [streak, setStreak] = useState(getStreak());
+  
+  // Listen for stats updates
+  useEffect(() => {
+    const handleStatsUpdate = (event: CustomEvent) => {
+      setStats(event.detail);
+      setStreak(getStreak()); // Also refresh streak
+    };
+    
+    // Add event listener for stats updates
+    window.addEventListener('statsUpdated', handleStatsUpdate as EventListener);
+    
+    // Refresh stats when component mounts
+    setStats(getStats());
+    setStreak(getStreak());
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('statsUpdated', handleStatsUpdate as EventListener);
+    };
+  }, []);
   
   // Format reading time (in minutes) to hours and minutes
   const formatReadingTime = (minutes: number): string => {

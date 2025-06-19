@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Book, ReadingSession, ReadingNote } from '../types';
 import syncedStorage from '../services/syncedStorage';
-import { getCachedBookDetails } from '../services/storage';
+import { getCachedBookDetails, forceStatsUpdate } from '../services/storage';
 import gunService from '../services/gun';
+import { useAuth } from './AuthContext';
 
 interface BookContextProps {
   books: Book[];
@@ -34,6 +35,7 @@ interface BookProviderProps {
 }
 
 export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
+  const { user } = useAuth();
   const [books, setBooks] = useState<Book[]>([]);
   const [currentBook, setCurrentBookState] = useState<Book | null>(null);
   const [sessions, setSessions] = useState<ReadingSession[]>([]);
@@ -89,8 +91,7 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
     } else {
       updatedBooks.push(book);
     }
-    
-    setBooks(updatedBooks);
+      setBooks(updatedBooks);
     await syncedStorage.saveBooks(updatedBooks);
       // Publish activity if book was just completed
     if (!wasCompleted && isNowCompleted) {
@@ -113,6 +114,8 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
         console.error('Error publishing book completion activity:', err);
       }
     }
+      // Force stats update when any book is added/updated (especially for completed books)
+    await forceStatsUpdate();
   };
   // Function to recalculate and update public stats
   const updatePublicStatsAfterBookCompletion = async () => {
@@ -151,11 +154,17 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
       };
       
       console.log('📊 Calculated stats:', stats);
-      
-      // Update public stats in GunJS
+        // Update public stats in GunJS
       const result = await gunService.updatePublicStats(stats);
       if (result.success) {
         console.log('✅ Public stats updated successfully');
+        
+        // Wait a moment for the GunJS update to propagate, then dispatch event to refresh leaderboard
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('publicStatsUpdated', { 
+            detail: { userId: user?.id, stats } 
+          }));
+        }, 1000);
       } else {
         console.error('❌ Failed to update public stats:', result.error);
       }
@@ -199,7 +208,6 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
     
     return streak;
   };
-
   const removeBook = async (bookKey: string) => {
     // Remove book from books list
     const updatedBooks = books.filter(book => book.key !== bookKey);
@@ -221,6 +229,9 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
       setCurrentBookState(null);
       await syncedStorage.setCurrentBook(null);
     }
+    
+    // Force stats update when removing books as it affects counters
+    await forceStatsUpdate();
   };
 
   const setActiveBook = async (book: Book | null) => {
@@ -236,13 +247,15 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
     } else {
       allSessions.push(session);
     }
-    
-    await syncedStorage.saveReadingSessions(allSessions);
+      await syncedStorage.saveReadingSessions(allSessions);
     
     if (currentBook && session.bookId === currentBook.key) {
       setSessions(allSessions.filter(s => s.bookId === currentBook.key));
     }
-      // Publish reading session activity if it's a substantial session (15+ minutes)
+    
+    // Force stats update when adding sessions as they may complete books
+    await forceStatsUpdate();
+    // Publish reading session activity if it's a substantial session (15+ minutes)
     if (session.duration && session.duration >= 15) {
       try {
         const book = books.find(b => b.key === session.bookId);

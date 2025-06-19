@@ -256,8 +256,7 @@ export const updateStats = (): void => {
       }
     }
   });
-  
-  // Also check for books explicitly marked as completed
+    // Also check for books explicitly marked as completed
   const savedBooks = JSON.parse(localStorage.getItem('bookish_books') || '[]');
   savedBooks.forEach((book: any) => {
     if (book.category === 'completed') {
@@ -275,6 +274,27 @@ export const updateStats = (): void => {
   };
   
   setItem(STATS_KEY, stats);
+  
+  // Dispatch custom event to notify components of stats update
+  window.dispatchEvent(new CustomEvent('statsUpdated', { 
+    detail: stats 
+  }));
+};
+
+// Force stats update function - useful when book statuses change
+export const forceStatsUpdate = async (): Promise<ReadingStats> => {
+  updateStats();
+  const stats = getStats();
+  
+  // Also sync stats to remote storage if available
+  try {
+    const { default: syncedStorage } = await import('./syncedStorage');
+    await syncedStorage.saveStats(stats);
+  } catch (error) {
+    console.warn('Failed to sync stats to remote storage:', error);
+  }
+  
+  return stats;
 };
 
 // User settings

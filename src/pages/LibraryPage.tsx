@@ -5,7 +5,7 @@ import { useBooks } from '../context/BookContext';
 import { useFriends } from '../context/FriendsContext';
 import { usePet } from '../context/PetContext';
 import { useTheme } from '../context/ThemeContext';
-import { getSessionsByBook } from '../services/storage';
+import { getSessionsByBook, forceStatsUpdate } from '../services/storage';
 import ConfirmationModal from '../components/ui/ConfirmationModal';
 import { useConfirmationModal } from '../hooks/useConfirmationModal';
 import Layout from '../components/Layout';
@@ -113,12 +113,19 @@ const LibraryPage: React.FC = () => {
       book.key === bookKey ? updatedBook : book
     );
     localStorage.setItem('myBooks', JSON.stringify(oldUpdatedBooks));
+      // Force stats update to immediately reflect changes
+    await forceStatsUpdate();
     
     // Update local state instead of page refresh
     setLocalBooks(updatedBooks);
     setShowMoveModal(null);
     setShowDropdown(null);
-  };  const handleMarkAsCompleted = (bookKey: string, e: React.MouseEvent) => {
+    
+    // Update public stats if book was marked as completed
+    if (newCategory === 'completed') {
+      await updatePublicStatsAfterBookCompletion();
+    }
+  };const handleMarkAsCompleted = (bookKey: string, e: React.MouseEvent) => {
     e.stopPropagation();
     modal.showConfirm(
       'Mark as Completed',

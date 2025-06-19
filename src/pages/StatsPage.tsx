@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Clock, Target, TrendingUp, Calendar, Award } from 'lucide-react';
 import { getStats, getStreak, getSessions } from '../services/storage';
@@ -11,9 +11,29 @@ const StatsPage: React.FC = () => {
   const { books } = useBooks();
   const { pet } = usePet();
   const { theme } = useTheme();
-  const stats = getStats();
-  const streak = getStreak();
+  const [stats, setStats] = useState(getStats());
+  const [streak, setStreak] = useState(getStreak());
   const sessions = getSessions();
+
+  // Listen for stats updates
+  useEffect(() => {
+    const handleStatsUpdate = (event: CustomEvent) => {
+      setStats(event.detail);
+      setStreak(getStreak()); // Also refresh streak
+    };
+    
+    // Add event listener for stats updates
+    window.addEventListener('statsUpdated', handleStatsUpdate as EventListener);
+    
+    // Refresh stats when component mounts
+    setStats(getStats());
+    setStreak(getStreak());
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('statsUpdated', handleStatsUpdate as EventListener);
+    };
+  }, []);
 
   const formatTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
