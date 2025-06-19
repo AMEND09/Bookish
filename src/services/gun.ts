@@ -32,10 +32,13 @@ if (!Gun.SEA) {
 console.log('🔫 About to initialize Gun instance...');
 
 const gun = Gun({
-  peers: ['https://gun-ad4i.onrender.com/gun'] 
+  peers: ['https://gun-ad4i.onrender.com/gun',
+          'http://amend09.hackclub.app:8765/gun',
+          'bewildered-dulcy-amend09-294cb39e.koyeb.app/gun',
+  ] 
 });
 
-console.log('🔫 GunJS initialized with Render peer');
+console.log('🔫 GunJS initialized with Render peer and Nest peer');
 console.log('🔫 Gun instance created:', typeof gun);
 console.log('🔫 Gun instance properties:', Object.keys(gun));
 
