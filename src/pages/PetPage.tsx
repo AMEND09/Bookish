@@ -83,23 +83,30 @@ const PetPage: React.FC = () => {
 
   return (    <div className="max-w-md mx-auto min-h-screen" style={{ backgroundColor: theme.colors.background }}>      <header className="p-4" style={{ backgroundColor: theme.colors.background, borderBottom: `1px solid ${theme.colors.border}` }}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => navigate(-1)}
+          <div className="flex items-center gap-3">            <button 
+              onClick={() => navigate('/')}
               className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: theme.colors.borderLight }}
+              style={{ backgroundColor: theme.colors.surfaceSecondary }}
             >
               <ArrowLeft className="w-5 h-5" style={{ color: theme.colors.textSecondary }} />
             </button>
             <h1 className="font-serif text-xl font-medium" style={{ color: theme.colors.textPrimary }}>My Reading Pet</h1>
+          </div>          <div className="flex gap-2">
+            <button
+              onClick={() => navigate('/pet-shop')}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-[#D2691E] to-[#FF8C00] text-white font-medium hover:opacity-90 transition-opacity"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              Shop
+            </button>
+            <button
+              onClick={() => navigate('/minigames')}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium hover:opacity-90 transition-opacity"
+            >
+              🎮
+              <span className="text-sm">Games</span>
+            </button>
           </div>
-          <button
-            onClick={() => navigate('/pet-shop')}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-[#D2691E] to-[#FF8C00] text-white font-medium hover:opacity-90 transition-opacity"
-          >
-            <ShoppingCart className="w-4 h-4" />
-            Shop
-          </button>
         </div>
       </header>
 
@@ -208,13 +215,17 @@ const PetPage: React.FC = () => {
                 ✨ Evolve to {evolutionReq.stage}!
               </button>
             )}
-          </div>          <p className="mb-4" style={{ color: theme.colors.textPrimary }}>{getPetMood()}</p>
-
-          {/* Points Display */}
-          <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: theme.colors.borderLight }}>
+          </div>          <p className="mb-4" style={{ color: theme.colors.textPrimary }}>{getPetMood()}</p>          {/* Points & Coins Display */}
+          <div className="mb-4 p-3 rounded-lg grid grid-cols-2 gap-3" style={{ backgroundColor: theme.colors.borderLight }}>
             <div className="text-center">
-              <div className="text-2xl font-bold mb-1" style={{ color: theme.colors.primary }}>💰 {pet.points}</div>
-              <p className="text-sm" style={{ color: theme.colors.textSecondary }}>Care Points (Earned from reading)</p>
+              <div className="text-xl font-bold mb-1" style={{ color: theme.colors.primary }}>💰 {pet.points}</div>
+              <p className="text-xs" style={{ color: theme.colors.textSecondary }}>Care Points</p>
+              <p className="text-xs" style={{ color: theme.colors.textSecondary }}>(From reading)</p>
+            </div>
+            <div className="text-center">
+              <div className="text-xl font-bold mb-1" style={{ color: '#FFD700' }}>🪙 {pet.coins}</div>
+              <p className="text-xs" style={{ color: theme.colors.textSecondary }}>Game Coins</p>
+              <p className="text-xs" style={{ color: theme.colors.textSecondary }}>(From minigames)</p>
             </div>
           </div>
 

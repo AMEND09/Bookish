@@ -5,7 +5,8 @@ export interface ShopItem {
   id: string;
   name: string;
   description: string;
-  price: number;
+  price: number; // Price in points (from reading)
+  coinPrice?: number; // Optional price in coins (from minigames)
   category: 'food' | 'toy' | 'medicine' | 'decoration' | 'special';
   effect: {
     hunger?: number;
@@ -36,6 +37,7 @@ export interface Pet {
   energy: number;
   health: number;
   points: number; // Points earned from reading that can be spent on pet care
+  coins: number; // Coins earned from minigames that can be spent in shop
   lastFed: string;
   lastPlayed: string;
   lastSlept: string;
@@ -71,7 +73,7 @@ interface PetContextType {
   healPet: () => void;
   revivePet: () => void;
   useItem: (itemId: string) => boolean;
-  buyItem: (itemId: string) => boolean;
+  buyItem: (itemId: string, useCoin?: boolean) => boolean;
   getShopItems: () => ShopItem[];
   getUnlockedItems: () => ShopItem[];
   updatePetFromReading: (minutes: number, isBookCompletion?: boolean) => void;
@@ -83,6 +85,9 @@ interface PetContextType {
   getPetEmoji: () => string;
   canEvolve: () => boolean;
   evolvePet: () => void;
+  // Minigames functions
+  addCoins: (amount: number) => void;
+  spendCoins: (amount: number) => boolean;
   // Backward compatibility functions
   getPetHappinessLevel: () => 'sad' | 'neutral' | 'happy';
   getLevelProgress: () => number;
@@ -108,6 +113,7 @@ const getDefaultPet = (): Pet => ({
   energy: 100,
   health: 100,
   points: 10, // Start with some points
+  coins: 0, // Start with no coins (earned from minigames)
   lastFed: new Date().toISOString(),
   lastPlayed: new Date().toISOString(),
   lastSlept: new Date().toISOString(),
@@ -174,8 +180,7 @@ interface PetProviderProps {
 
 export const PetProvider: React.FC<PetProviderProps> = ({ children }) => {
   const [pet, setPet] = useState<Pet>(loadPetFromStorage);
-  const [petStats, setPetStats] = useState<PetStats>(loadPetStatsFromStorage);
-  // Shop items data
+  const [petStats, setPetStats] = useState<PetStats>(loadPetStatsFromStorage);  // Shop items data
   const shopItems: ShopItem[] = [
     // Food items
     {
@@ -183,6 +188,7 @@ export const PetProvider: React.FC<PetProviderProps> = ({ children }) => {
       name: 'Pet Food',
       description: 'Basic nutritious food for your pet',
       price: 3,
+      coinPrice: 5, // Alternative coin price
       category: 'food',
       effect: { hunger: 25, happiness: 5 },
       emoji: '🍖',
@@ -193,6 +199,7 @@ export const PetProvider: React.FC<PetProviderProps> = ({ children }) => {
       name: 'Premium Feast',
       description: 'Delicious high-quality meal',
       price: 8,
+      coinPrice: 12,
       category: 'food',
       effect: { hunger: 40, happiness: 15, health: 5 },
       emoji: '🍗',
@@ -204,6 +211,7 @@ export const PetProvider: React.FC<PetProviderProps> = ({ children }) => {
       name: 'Energy Potion',
       description: 'Restores energy and vitality',
       price: 5,
+      coinPrice: 8,
       category: 'food',
       effect: { energy: 30, happiness: 10 },
       emoji: '🧪',
@@ -864,6 +872,25 @@ export const PetProvider: React.FC<PetProviderProps> = ({ children }) => {
     }
   };
 
+  // Coin management functions for minigames
+  const addCoins = (amount: number) => {
+    setPet(prevPet => ({
+      ...prevPet,
+      coins: prevPet.coins + amount
+    }));
+  };
+
+  const spendCoins = (amount: number): boolean => {
+    if (pet.coins < amount) return false;
+    
+    setPet(prevPet => ({
+      ...prevPet,
+      coins: prevPet.coins - amount
+    }));
+    
+    return true;
+  };
+
   // Shop functions
   const getShopItems = (): ShopItem[] => {
     return shopItems;
@@ -882,12 +909,17 @@ export const PetProvider: React.FC<PetProviderProps> = ({ children }) => {
       return true;
     });
   };
-
-  const buyItem = (itemId: string): boolean => {
+  const buyItem = (itemId: string, useCoins: boolean = false): boolean => {
     const item = shopItems.find(i => i.id === itemId);
     if (!item) return false;
-    if (pet.points < item.price) return false;
     if (!getUnlockedItems().find(i => i.id === itemId)) return false;
+
+    // Check if user has enough currency
+    if (useCoins) {
+      if (!item.coinPrice || pet.coins < item.coinPrice) return false;
+    } else {
+      if (pet.points < item.price) return false;
+    }
 
     setPet(prevPet => {
       const existingItem = prevPet.inventory.find(i => i.id === itemId);
@@ -897,7 +929,8 @@ export const PetProvider: React.FC<PetProviderProps> = ({ children }) => {
 
       return {
         ...prevPet,
-        points: prevPet.points - item.price,
+        points: useCoins ? prevPet.points : prevPet.points - item.price,
+        coins: useCoins ? prevPet.coins - (item.coinPrice || 0) : prevPet.coins,
         inventory: updatedInventory
       };
     });
@@ -1134,7 +1167,9 @@ export const PetProvider: React.FC<PetProviderProps> = ({ children }) => {
         getShopItems,
         getUnlockedItems,
         buyItem,
-        useItem
+        useItem,
+        addCoins,
+        spendCoins
       }}
     >
       {children}

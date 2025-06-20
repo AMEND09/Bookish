@@ -663,6 +663,46 @@ class GunService {
       });
     });
   }
+
+  // Track minigame completion
+  async trackGameCompletion(gameData: {
+    sessionId: string;
+    gameId: string;
+    userId: string;
+    score: number;
+    coinsEarned: number;
+    completedAt: string;
+  }): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (!this.user.is) {
+        return { success: false, error: 'User not authenticated' };
+      }
+
+      const gameCompletionData = {
+        ...gameData,
+        username: this.user.is.alias || 'Unknown User',
+        createdAt: new Date().toISOString()
+      };
+
+      // Store in user's game completions
+      this.user.get('gameCompletions').get(gameData.sessionId).put(gameCompletionData);
+
+      // Store in public leaderboard if score is good
+      if (gameData.score > 0) {
+        this.gun.get('gameLeaderboard').get(gameData.gameId).get(gameData.sessionId).put({
+          userId: gameData.userId,
+          username: this.user.is.alias || 'Unknown User',
+          score: gameData.score,
+          completedAt: gameData.completedAt
+        });
+      }
+
+      return { success: true };
+    } catch (err) {
+      console.error('🔫 GunJS: Error tracking game completion:', err);
+      return { success: false, error: 'Failed to track game completion' };
+    }
+  }
 }
 
 export const gunService = new GunService();

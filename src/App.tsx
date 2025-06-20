@@ -18,6 +18,7 @@ import NotesPage from './pages/NotesPage';
 import AddNotePage from './pages/AddNotePage';
 import PetPage from './pages/PetPage';
 import PetShopPage from './pages/PetShopPage';
+import MinigamesPage from './pages/MinigamesPage';
 import ProfilePage from './pages/ProfilePage';
 import FriendsPage from './pages/FriendsPage';
 import LeaderboardPage from './pages/LeaderboardPage';
@@ -51,6 +52,7 @@ const App: React.FC = () => {
                       <Route path="/notes" element={<NotesPage />} />                      <Route path="/notes/add" element={<AddNotePage />} />
                       <Route path="/pet" element={<PetPage />} />
                       <Route path="/pet-shop" element={<PetShopPage />} />
+                      <Route path="/minigames" element={<MinigamesPage />} />
                       <Route path="/stats" element={<StatsPage />} />
                       <Route path="/profile" element={<ProfilePage />} />
                       <Route path="/friends" element={<FriendsPage />} />
