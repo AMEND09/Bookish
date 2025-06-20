@@ -52,7 +52,7 @@ class MinigamesAPI {
       baseReward: 10,
       bonusMultiplier: 1.5,
       maxPlaysPerDay: 5,
-      gameUrl: '/sample-minigame.html',
+      gameUrl: '/Bookish/sample-minigame.html',
       isActive: true
     },
     {
