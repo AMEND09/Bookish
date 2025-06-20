@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, Zap, Apple, Bed, RefreshCw, Edit3 } from 'lucide-react';
+import { ArrowLeft, Heart, Zap, Apple, Bed, RefreshCw, Edit3, ShoppingCart, AlertTriangle } from 'lucide-react';
 import { usePet } from '../context/PetContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -81,18 +81,81 @@ const PetPage: React.FC = () => {
 
   const evolutionReq = getPetEvolutionRequirement();
 
-  return (    <div className="max-w-md mx-auto min-h-screen" style={{ backgroundColor: theme.colors.background }}>
-      <header className="p-4" style={{ backgroundColor: theme.colors.background, borderBottom: `1px solid ${theme.colors.border}` }}>
-        <div className="flex items-center gap-3">          <button 
-            onClick={() => navigate(-1)}
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: theme.colors.borderLight }}
+  return (    <div className="max-w-md mx-auto min-h-screen" style={{ backgroundColor: theme.colors.background }}>      <header className="p-4" style={{ backgroundColor: theme.colors.background, borderBottom: `1px solid ${theme.colors.border}` }}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => navigate(-1)}
+              className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: theme.colors.borderLight }}
+            >
+              <ArrowLeft className="w-5 h-5" style={{ color: theme.colors.textSecondary }} />
+            </button>
+            <h1 className="font-serif text-xl font-medium" style={{ color: theme.colors.textPrimary }}>My Reading Pet</h1>
+          </div>
+          <button
+            onClick={() => navigate('/pet-shop')}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-[#D2691E] to-[#FF8C00] text-white font-medium hover:opacity-90 transition-opacity"
           >
-            <ArrowLeft className="w-5 h-5" style={{ color: theme.colors.textSecondary }} />
+            <ShoppingCart className="w-4 h-4" />
+            Shop
           </button>
-          <h1 className="font-serif text-xl font-medium" style={{ color: theme.colors.textPrimary }}>My Reading Pet</h1>
         </div>
       </header>
+
+      {/* Critical Status Warnings */}
+      {!pet.isAlive && (
+        <div className="mx-4 mt-4 p-4 rounded-lg bg-red-50 border-2 border-red-300 animate-pulse">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">💀</span>
+            <div>
+              <h3 className="font-bold text-red-800 text-lg">Your Pet Has Died!</h3>
+              <p className="text-red-700">Visit the shop to buy a Phoenix Feather to revive them.</p>
+              {pet.deathDate && (
+                <p className="text-sm text-red-600 mt-1">
+                  Died: {new Date(pet.deathDate).toLocaleString()}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {pet.isAlive && pet.mood === 'dying' && (
+        <div className="mx-4 mt-4 p-4 rounded-lg bg-red-50 border-2 border-red-400 animate-pulse">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-8 h-8 text-red-600" />
+            <div>
+              <h3 className="font-bold text-red-800 text-lg">CRITICAL CONDITION!</h3>
+              <p className="text-red-700">Your pet is dying! Take immediate action!</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {pet.isAlive && pet.hunger < 15 && (
+        <div className="mx-4 mt-4 p-4 rounded-lg bg-orange-50 border-2 border-orange-300">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🍖</span>
+            <div>
+              <h3 className="font-bold text-orange-800">Starving!</h3>
+              <p className="text-orange-700">Your pet desperately needs food!</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {pet.isAlive && pet.sickness > 70 && (
+        <div className="mx-4 mt-4 p-4 rounded-lg bg-purple-50 border-2 border-purple-300">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🤒</span>
+            <div>
+              <h3 className="font-bold text-purple-800">Seriously Ill!</h3>
+              <p className="text-purple-700">Your pet needs medicine urgently!</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="p-4 space-y-6">        {/* Pet Display */}
         <div className="rounded-xl shadow-sm p-6 text-center" style={{ backgroundColor: theme.colors.surface }}>
@@ -254,9 +317,7 @@ const PetPage: React.FC = () => {
                   style={{ width: getStatBarWidth(pet.energy) }}
                 />
               </div>
-            </div>
-
-            <div>
+            </div>            <div>
               <div className="flex items-center justify-between text-sm mb-2">
                 <div className="flex items-center gap-2">
                   <Bed className="w-4 h-4 text-purple-500" />
@@ -268,6 +329,42 @@ const PetPage: React.FC = () => {
                 <div 
                   className={`h-full ${getStatColor(pet.health)} rounded-full transition-all duration-300`}
                   style={{ width: getStatBarWidth(pet.health) }}
+                />
+              </div>
+            </div>
+
+            {/* Sickness Stat - only show if pet is sick */}
+            {pet.sickness > 0 && (
+              <div>
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-purple-500">🤒</span>
+                    <span>Sickness</span>
+                  </div>
+                  <span className="text-purple-600 font-medium">{Math.round(pet.sickness)}/100</span>
+                </div>
+                <div className="h-3 bg-[#F0EDE8] rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-purple-400 to-purple-600 rounded-full transition-all duration-300"
+                    style={{ width: getStatBarWidth(pet.sickness) }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Cleanliness Stat */}
+            <div>
+              <div className="flex items-center justify-between text-sm mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-cyan-500">🧼</span>
+                  <span>Cleanliness</span>
+                </div>
+                <span>{Math.round(pet.cleanliness)}/100</span>
+              </div>
+              <div className="h-3 bg-[#F0EDE8] rounded-full overflow-hidden">
+                <div 
+                  className={`h-full ${getStatColor(pet.cleanliness)} rounded-full transition-all duration-300`}
+                  style={{ width: getStatBarWidth(pet.cleanliness) }}
                 />
               </div>
             </div>

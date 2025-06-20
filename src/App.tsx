@@ -17,9 +17,13 @@ import StatsPage from './pages/StatsPage';
 import NotesPage from './pages/NotesPage';
 import AddNotePage from './pages/AddNotePage';
 import PetPage from './pages/PetPage';
+import PetShopPage from './pages/PetShopPage';
 import ProfilePage from './pages/ProfilePage';
 import FriendsPage from './pages/FriendsPage';
 import LeaderboardPage from './pages/LeaderboardPage';
+
+// Components
+import PetStatusMonitor from './components/pet/PetStatusMonitor';
 
 const App: React.FC = () => {
   return (
@@ -34,9 +38,9 @@ const App: React.FC = () => {
         <ThemeProvider>
           <FriendsProvider>
             <PetProvider>
-              <BookProvider>
-                <Router basename="/Bookish">
+              <BookProvider>                <Router basename="/Bookish">
                   <AuthGuard>
+                    <PetStatusMonitor />
                     <Routes>
                       <Route path="/" element={<HomePage />} />
                       <Route path="/welcome" element={<LandingPage />} />
@@ -44,9 +48,9 @@ const App: React.FC = () => {
                       <Route path="/library" element={<LibraryPage />} />
                       <Route path="/book" element={<BookDetailsPage />} />
                       <Route path="/reading" element={<ReadingSessionPage />} />
-                      <Route path="/notes" element={<NotesPage />} />
-                      <Route path="/notes/add" element={<AddNotePage />} />
+                      <Route path="/notes" element={<NotesPage />} />                      <Route path="/notes/add" element={<AddNotePage />} />
                       <Route path="/pet" element={<PetPage />} />
+                      <Route path="/pet-shop" element={<PetShopPage />} />
                       <Route path="/stats" element={<StatsPage />} />
                       <Route path="/profile" element={<ProfilePage />} />
                       <Route path="/friends" element={<FriendsPage />} />

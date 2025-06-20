@@ -152,6 +152,9 @@ body {
   /* Hide any potential system UI overlays */
   body {
     -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
     -webkit-touch-callout: none;
     -webkit-text-size-adjust: none;
   }
@@ -224,4 +227,49 @@ body {
   .app-titlebar {
     display: none;
   }
+}
+
+/* Pet Status Monitor Animations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes pulse-urgent {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse-urgent {
+  animation: pulse-urgent 1s ease-in-out infinite;
+}
+
+/* Pet health bar animations */
+@keyframes healthDanger {
+  0%, 100% {
+    background-color: #ef4444;
+  }
+  50% {
+    background-color: #dc2626;
+  }
+}
+
+.health-danger {
+  animation: healthDanger 0.8s ease-in-out infinite;
 }
