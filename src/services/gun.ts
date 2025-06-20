@@ -33,7 +33,8 @@ console.log('🔫 About to initialize Gun instance...');
 
 const gun = Gun({
   peers: ['https://gun-ad4i.onrender.com/gun',
-          'https://bewildered-dulcy-amend09-294cb39e.koyeb.app/gun'
+          'https://bewildered-dulcy-amend09-294cb39e.koyeb.app/gun',
+          'https://amend09.hackclub.app/gun'
   ] 
 });
 
