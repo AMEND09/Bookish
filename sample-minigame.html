@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookish Wordle - Literary Word Game</title>
+    <style>
+        /* Bookish Design System Colors */
+        :root {
+            --primary: #D2691E;
+            --primary-light: #E89556;
+            --primary-dark: #B8571A;
+            --secondary: #8B7355;
+            --background: #F7F5F3;
+            --surface: #FFFFFF;
+            --text-primary: #3A3A3A;
+            --text-secondary: #8B7355;
+            --border: #E8E3DD;
+            --border-light: #F0EDE8;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --error: #EF4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }        .title {
+            font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: space-between;
+            background: var(--border-light);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .word-grid {
+            display: grid;
+            grid-template-rows: repeat(6, 1fr);
+            gap: 4px;
+            margin-bottom: 20px;
+            aspect-ratio: 5/6;
+        }
+
+        .word-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+        }
+
+        .letter-box {
+            aspect-ratio: 1;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 600;
+            background: var(--surface);
+            transition: all 0.2s ease;
+        }
+
+        .letter-box.filled {
+            border-color: var(--text-secondary);
+            color: var(--text-primary);
+        }
+
+        .letter-box.correct {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .letter-box.present {
+            background: var(--warning);
+            border-color: var(--warning);
+            color: white;
+        }
+
+        .letter-box.absent {
+            background: var(--text-secondary);
+            border-color: var(--text-secondary);
+            color: white;
+        }
+
+        .keyboard {
+            margin-bottom: 20px;
+        }
+
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        .key {
+            min-width: 32px;
+            height: 40px;
+            border: none;
+            border-radius: 4px;
+            background: var(--border-light);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .key:hover {
+            background: var(--border);
+        }
+
+        .key.wide {
+            min-width: 60px;
+            font-size: 12px;
+        }
+
+        .key.correct {
+            background: var(--success);
+            color: white;
+        }
+
+        .key.present {
+            background: var(--warning);
+            color: white;
+        }
+
+        .key.absent {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+        }
+
+        .btn-primary:disabled {
+            background: var(--border);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: var(--border-light);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .message {
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            min-height: 20px;
+        }
+
+        .message.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .message.info {
+            background: var(--border-light);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .game-complete {
+            text-align: center;
+            padding: 24px;
+            background: var(--border-light);
+            border-radius: 8px;
+            margin-top: 16px;
+        }        .game-complete h2 {
+            font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+            font-size: 20px;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .game-complete p {
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        @keyframes flip {
+            0% { transform: rotateY(0); }
+            50% { transform: rotateY(90deg); }
+            100% { transform: rotateY(0); }
+        }
+
+        .letter-box.flipping {
+            animation: flip 0.6s ease-in-out;
+        }
+
+        @keyframes bounce {
+            0%, 20% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            50% { transform: translateY(5px); }
+            60% { transform: translateY(-5px); }
+            80% { transform: translateY(2px); }
+            100% { transform: translateY(0); }
+        }
+
+        .letter-box.bouncing {
+            animation: bounce 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1 class="title">📚 Bookish Wordle</h1>
+            <p class="subtitle">Guess the literary word in 6 tries</p>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat">
+                <div class="stat-value" id="score">0</div>
+                <div class="stat-label">Score</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="round">1</div>
+                <div class="stat-label">Round</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="streak">0</div>
+                <div class="stat-label">Streak</div>
+            </div>
+        </div>
+
+        <div class="word-grid" id="wordGrid">
+            <!-- Grid will be generated by JavaScript -->
+        </div>
+
+        <div class="keyboard" id="keyboard">
+            <!-- Keyboard will be generated by JavaScript -->
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-secondary" onclick="giveHint()" id="hintBtn">
+                💡 Hint (-2 pts)
+            </button>
+            <button class="btn btn-primary" onclick="newWord()" id="newWordBtn" disabled>
+                Next Word
+            </button>
+        </div>
+
+        <div class="message info" id="message">
+            Guess today's literary word! Each guess must be a valid 5-letter word.
+        </div>
+
+        <div class="hint" id="hint">
+            Book-themed words only • Common literary terms and author names
+        </div>
+
+        <div id="gameComplete" class="game-complete" style="display: none;">
+            <h2>🎉 Well Done, Wordsmith!</h2>
+            <p>Final Score: <span id="finalScore">0</span> points</p>
+            <p>Words Completed: <span id="wordsCompleted">0</span></p>
+            <p>You've earned coins for your literary pet! 📖</p>
+        </div>
+    </div>
+
+    <script>
+        // Literary word bank - book-themed 5-letter words
+        const WORD_BANK = [
+            'NOVEL', 'PROSE', 'VERSE', 'DRAMA', 'GENRE', 'THEME', 'PLOT',
+            'STORY', 'TITLE', 'SPINE', 'COVER', 'PAGES', 'PRINT', 'PAPER',
+            'WORDS', 'TALES', 'MYTHS', 'LORE', 'SAGA', 'EPIC', 'POEM',
+            'RHYME', 'METER', 'STYLE', 'VOICE', 'TONE', 'MOOD', 'SCENE',
+            'QUOTE', 'DIARY', 'NOTES', 'INDEX', 'BLURB', 'FOLIO', 'CANON',
+            'ADAPT', 'STUDY', 'LEARN', 'TEACH', 'READS', 'WROTE', 'PAGED'
+        ];
+
+        const HINTS = {
+            'NOVEL': 'A long fictional narrative',
+            'PROSE': 'Written language in ordinary form',
+            'VERSE': 'Writing arranged with rhythm',
+            'DRAMA': 'Literature intended for performance',
+            'GENRE': 'Category of literary composition',
+            'THEME': 'Central subject of a text',
+            'PLOT': 'Main story of a narrative',
+            'STORY': 'Account of incidents or events',
+            'TITLE': 'Name of a literary work',
+            'SPINE': 'Backbone of a book',
+            'COVER': 'Outer protection of a book',
+            'PAGES': 'Leaves of a book',
+            'PRINT': 'Printed text or letters',
+            'PAPER': 'Material for writing or printing',
+            'WORDS': 'Units of language',
+            'TALES': 'Narrative stories',
+            'MYTHS': 'Traditional stories',
+            'LORE': 'Traditional knowledge',
+            'SAGA': 'Long story of heroic achievement',
+            'EPIC': 'Long narrative poem',
+            'POEM': 'Piece of writing in verse',
+            'RHYME': 'Correspondence of sound',
+            'METER': 'Rhythm of verse',
+            'STYLE': 'Manner of expression',
+            'VOICE': 'Author\'s distinctive tone',
+            'TONE': 'General attitude of writing',
+            'MOOD': 'Atmosphere of the text',
+            'SCENE': 'Setting of action',
+            'QUOTE': 'Repeated exact words',
+            'DIARY': 'Daily record of events',
+            'NOTES': 'Brief records',
+            'INDEX': 'Alphabetical listing',
+            'BLURB': 'Short promotional description',
+            'FOLIO': 'Large book format',
+            'CANON': 'Accepted group of works',
+            'ADAPT': 'Modify for different medium',
+            'STUDY': 'Detailed investigation',
+            'LEARN': 'Acquire knowledge',
+            'TEACH': 'Impart knowledge',
+            'READS': 'Looks at and comprehends',
+            'WROTE': 'Past tense of write',
+            'PAGED': 'Turned through pages'
+        };
+
+        // Game state
+        let currentWord = '';
+        let currentGuess = '';
+        let currentRow = 0;
+        let gameComplete = false;
+        let score = 0;
+        let round = 1;
+        let streak = 0;
+        let maxRounds = 5;
+        let hintsUsed = 0;
+        let gameSession = null;
+
+        // Game elements
+        let wordGrid, keyboard, messageEl, hintEl;
+
+        // Keyboard layout
+        const KEYBOARD_ROWS = [
+            ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+            ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+            ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'BACK']
+        ];
+
+        // Initialize game
+        function initGame() {
+            wordGrid = document.getElementById('wordGrid');
+            keyboard = document.getElementById('keyboard');
+            messageEl = document.getElementById('message');
+            hintEl = document.getElementById('hint');
+
+            createGrid();
+            createKeyboard();
+            setupEventListeners();
+            
+            // Check if we're in an iframe (integrated with Bookish)
+            if (window.parent !== window) {
+                setupMinigameSDK();
+            }
+
+            newWord();
+        }
+
+        function setupMinigameSDK() {
+            window.addEventListener('message', (event) => {
+                if (event.data.type === 'init_minigame') {
+                    gameSession = event.data;
+                    console.log('🎮 Bookish Wordle initialized');
+                }
+            });
+
+            window.parent.postMessage({
+                type: 'game_ready',
+                source: 'bookish_minigame'
+            }, '*');
+        }
+
+        function createGrid() {
+            wordGrid.innerHTML = '';
+            for (let i = 0; i < 6; i++) {
+                const row = document.createElement('div');
+                row.className = 'word-row';
+                for (let j = 0; j < 5; j++) {
+                    const box = document.createElement('div');
+                    box.className = 'letter-box';
+                    box.id = `box-${i}-${j}`;
+                    row.appendChild(box);
+                }
+                wordGrid.appendChild(row);
+            }
+        }
+
+        function createKeyboard() {
+            keyboard.innerHTML = '';
+            KEYBOARD_ROWS.forEach(row => {
+                const rowEl = document.createElement('div');
+                rowEl.className = 'keyboard-row';
+                row.forEach(key => {
+                    const keyEl = document.createElement('button');
+                    keyEl.className = 'key';
+                    keyEl.textContent = key === 'BACK' ? '⌫' : key;
+                    keyEl.dataset.key = key;
+                    if (key.length > 1) keyEl.classList.add('wide');
+                    keyEl.onclick = () => handleKeyPress(key);
+                    rowEl.appendChild(keyEl);
+                });
+                keyboard.appendChild(rowEl);
+            });
+        }
+
+        function setupEventListeners() {
+            document.addEventListener('keydown', (e) => {
+                const key = e.key.toUpperCase();
+                if (key === 'ENTER') {
+                    handleKeyPress('ENTER');
+                } else if (key === 'BACKSPACE') {
+                    handleKeyPress('BACK');
+                } else if (key.match(/[A-Z]/)) {
+                    handleKeyPress(key);
+                }
+            });
+
+            // Listen for pause/resume from parent
+            window.addEventListener('message', (event) => {
+                if (event.data.source === 'bookish_parent') {
+                    switch (event.data.type) {
+                        case 'game_pause':
+                            showMessage('⏸️ Game Paused', 'info');
+                            break;
+                        case 'game_resume':
+                            showMessage('▶️ Game Resumed!', 'info');
+                            break;
+                        case 'game_stop':
+                            showMessage('🛑 Game Stopped', 'error');
+                            break;
+                    }
+                }
+            });
+        }
+
+        function newWord() {
+            if (round > maxRounds) {
+                endGame();
+                return;
+            }
+
+            currentWord = WORD_BANK[Math.floor(Math.random() * WORD_BANK.length)];
+            currentGuess = '';
+            currentRow = 0;
+            gameComplete = false;
+            hintsUsed = 0;
+
+            clearGrid();
+            clearKeyboard();
+            
+            document.getElementById('round').textContent = round;
+            document.getElementById('hintBtn').disabled = false;
+            document.getElementById('newWordBtn').disabled = true;
+            
+            showMessage(`Round ${round}: Guess the literary word!`, 'info');
+            updateHint(`💡 This word has ${currentWord.length} letters and relates to books or reading`);
+        }
+
+        function clearGrid() {
+            for (let i = 0; i < 6; i++) {
+                for (let j = 0; j < 5; j++) {
+                    const box = document.getElementById(`box-${i}-${j}`);
+                    box.textContent = '';
+                    box.className = 'letter-box';
+                }
+            }
+        }
+
+        function clearKeyboard() {
+            document.querySelectorAll('.key').forEach(key => {
+                key.classList.remove('correct', 'present', 'absent');
+            });
+        }
+
+        function handleKeyPress(key) {
+            if (gameComplete) return;
+
+            if (key === 'ENTER') {
+                submitGuess();
+            } else if (key === 'BACK') {
+                deleteLetter();
+            } else if (currentGuess.length < 5) {
+                addLetter(key);
+            }
+        }
+
+        function addLetter(letter) {
+            if (currentGuess.length < 5) {
+                currentGuess += letter;
+                const box = document.getElementById(`box-${currentRow}-${currentGuess.length - 1}`);
+                box.textContent = letter;
+                box.classList.add('filled');
+                box.classList.add('bouncing');
+                setTimeout(() => box.classList.remove('bouncing'), 500);
+            }
+        }
+
+        function deleteLetter() {
+            if (currentGuess.length > 0) {
+                const box = document.getElementById(`box-${currentRow}-${currentGuess.length - 1}`);
+                box.textContent = '';
+                box.classList.remove('filled');
+                currentGuess = currentGuess.slice(0, -1);
+            }
+        }
+
+        function submitGuess() {
+            if (currentGuess.length !== 5) {
+                showMessage('Not enough letters!', 'error');
+                return;
+            }
+
+            // Simple word validation (in a real game, you'd check against a dictionary)
+            if (!isValidWord(currentGuess)) {
+                showMessage('Not a valid word!', 'error');
+                return;
+            }
+
+            checkGuess();
+        }
+
+        function isValidWord(word) {
+            // For simplicity, just check if it's all letters
+            return /^[A-Z]{5}$/.test(word);
+        }
+
+        function checkGuess() {
+            const guess = currentGuess;
+            const target = currentWord;
+            const result = [];
+
+            // Track letter counts in target word
+            const targetCounts = {};
+            for (let letter of target) {
+                targetCounts[letter] = (targetCounts[letter] || 0) + 1;
+            }
+
+            // First pass: mark correct letters
+            for (let i = 0; i < 5; i++) {
+                if (guess[i] === target[i]) {
+                    result[i] = 'correct';
+                    targetCounts[guess[i]]--;
+                }
+            }
+
+            // Second pass: mark present letters
+            for (let i = 0; i < 5; i++) {
+                if (result[i] === undefined) {
+                    if (targetCounts[guess[i]] > 0) {
+                        result[i] = 'present';
+                        targetCounts[guess[i]]--;
+                    } else {
+                        result[i] = 'absent';
+                    }
+                }
+            }
+
+            // Animate and apply results
+            animateResult(result, guess);
+
+            // Update keyboard
+            updateKeyboard(guess, result);
+
+            if (guess === target) {
+                // Correct guess
+                const points = calculatePoints();
+                score += points;
+                streak++;
+                gameComplete = true;
+                
+                setTimeout(() => {
+                    showMessage(`🎉 Excellent! +${points} points`, 'success');
+                    document.getElementById('score').textContent = score;
+                    document.getElementById('streak').textContent = streak;
+                    document.getElementById('newWordBtn').disabled = false;
+                    round++;
+                }, 1500);
+            } else if (currentRow === 5) {
+                // Game over
+                streak = 0;
+                gameComplete = true;
+                setTimeout(() => {
+                    showMessage(`😔 The word was: ${target}`, 'error');
+                    document.getElementById('streak').textContent = streak;
+                    document.getElementById('newWordBtn').disabled = false;
+                    round++;
+                }, 1500);
+            } else {
+                // Continue guessing
+                currentRow++;
+                currentGuess = '';
+            }
+        }
+
+        function animateResult(result, guess) {
+            for (let i = 0; i < 5; i++) {
+                const box = document.getElementById(`box-${currentRow}-${i}`);
+                box.classList.add('flipping');
+                
+                setTimeout(() => {
+                    box.classList.add(result[i]);
+                    box.classList.remove('flipping');
+                }, 300);
+            }
+        }
+
+        function updateKeyboard(guess, result) {
+            for (let i = 0; i < 5; i++) {
+                const keyEl = document.querySelector(`[data-key="${guess[i]}"]`);
+                if (keyEl) {
+                    // Only upgrade the key state (correct > present > absent)
+                    if (result[i] === 'correct' || 
+                        (result[i] === 'present' && !keyEl.classList.contains('correct')) ||
+                        (result[i] === 'absent' && !keyEl.classList.contains('correct') && !keyEl.classList.contains('present'))) {
+                        keyEl.classList.remove('correct', 'present', 'absent');
+                        keyEl.classList.add(result[i]);
+                    }
+                }
+            }
+        }
+
+        function calculatePoints() {
+            const basePoints = 20;
+            const rowBonus = (6 - currentRow) * 5;
+            const hintPenalty = hintsUsed * 2;
+            return Math.max(5, basePoints + rowBonus - hintPenalty);
+        }
+
+        function giveHint() {
+            if (hintsUsed >= 2) {
+                showMessage('No more hints available!', 'error');
+                return;
+            }
+
+            hintsUsed++;
+            const hint = HINTS[currentWord] || 'A word related to books and reading';
+            updateHint(`💡 Hint ${hintsUsed}/2: ${hint}`);
+            showMessage(`Hint revealed! (-2 points)`, 'info');
+            
+            if (hintsUsed >= 2) {
+                document.getElementById('hintBtn').disabled = true;
+            }
+        }
+
+        function updateHint(text) {
+            hintEl.textContent = text;
+        }
+
+        function showMessage(text, type) {
+            messageEl.textContent = text;
+            messageEl.className = `message ${type}`;
+        }
+
+        function endGame() {
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('wordsCompleted').textContent = round - 1;
+            document.getElementById('gameComplete').style.display = 'block';
+            document.getElementById('hintBtn').disabled = true;
+            document.getElementById('newWordBtn').disabled = true;
+
+            // Send completion to parent if integrated
+            if (window.parent !== window && gameSession) {
+                window.parent.postMessage({
+                    type: 'game_complete',
+                    source: 'bookish_minigame',
+                    sessionId: gameSession.sessionId,
+                    score: score,
+                    validationToken: gameSession.validationToken
+                }, '*');
+            } else {
+                // Standalone mode
+                setTimeout(() => {
+                    alert(`Game Complete!\nFinal Score: ${score}\nWords Completed: ${round - 1}\nIn the full app, you would earn coins for your pet!`);
+                }, 1000);
+            }
+        }
+
+        // Initialize the game when page loads
+        document.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+</html>
